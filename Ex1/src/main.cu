@@ -1,12 +1,25 @@
 #include "timer.hpp"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <vector>
 
 #define RGB_COLOR_RANGE 255
+#define GRID_SIZE 256
+#define BLOCK_SIZE 256
 
 using IntVec = std::vector<int>;
+
+__global__ void histogram_noloop(int *buckets, int *colors, size_t n_colors)
+{
+  int global_idx = threadIdx.x + blockDim.x * blockIdx.x;
+  if (global_idx < n_colors)
+  {
+    int c = colors[global_idx];
+    atomicAdd(&buckets[c], 1);
+  }
+}
 
 __global__ void histogram_original(int *buckets, int *colors, size_t n_colors)
 {
@@ -54,10 +67,11 @@ IntVec generate_random_array(size_t len)
  *
  * @param h_colors
  */
-void benchmark_kernel(IntVec const &h_colors, size_t n_blocks = 256, size_t n_threads = 256)
+template <typename KERNEL>
+double benchmark_kernel(KERNEL kernel, IntVec const &h_colors, std::string kernel_name = "",
+                        size_t grid_size = GRID_SIZE, size_t block_size = BLOCK_SIZE,
+                        size_t repetitions = 10)
 {
-  Timer timer;
-
   int *d_colors;
   size_t bytes_colors = sizeof(int) * h_colors.size();
   cudaMalloc(&d_colors, bytes_colors);
@@ -70,26 +84,46 @@ void benchmark_kernel(IntVec const &h_colors, size_t n_blocks = 256, size_t n_th
   cudaMemcpy(d_buckets, h_buckets.data(), bytes_buckets, cudaMemcpyHostToDevice);
 
   // Benchmark start
-  cudaDeviceSynchronize();
+  double start_time;
+  double median_time = 0;
+  Timer timer;
+
+  // vector of execution times to calculate median time
+  std::vector<double> exec_times;
   timer.reset();
 
-  histogram_original<<<n_blocks, n_threads>>>(d_buckets, d_colors, h_colors.size());
+  for (size_t j = 0; j < repetitions; j++)
+  {
+    cudaDeviceSynchronize(); // make sure gpu is ready
+    start_time = timer.get();
 
-  cudaDeviceSynchronize();
-  double time = timer.get();
+    kernel<<<grid_size, block_size>>>(d_buckets, d_colors, h_colors.size());
+
+    cudaDeviceSynchronize(); // make sure gpu is done
+    exec_times.push_back(timer.get() - start_time);
+  }
+
+  std::sort(exec_times.begin(), exec_times.end());
+  median_time = exec_times[int(repetitions / 2)];
+
   // Benchmark end
 
   cudaMemcpy(h_buckets.data(), d_buckets, bytes_buckets, cudaMemcpyDeviceToHost);
 
-  std::cout << "Benchmark finished after " << time << "s" << std::endl;
-
   cudaFree(d_colors);
   cudaFree(d_buckets);
+
+  std::cout << "Kernel " << kernel_name << "finished with median time = " << median_time << "s."
+            << std::endl;
+
+  return median_time;
 }
 
 int main()
 {
   srand(0);
-  IntVec colors = generate_random_array((int)1e7);
-  benchmark_kernel(colors);
+  IntVec colors = generate_random_array((int)1e6);
+
+  benchmark_kernel(histogram_original, colors, "original loops");
+  benchmark_kernel(histogram_noloop, colors, "original no loops");
 }
