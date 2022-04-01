@@ -113,7 +113,7 @@ double benchmark_kernel(KERNEL kernel, IntVec const &h_colors, std::string kerne
   cudaFree(d_colors);
   cudaFree(d_buckets);
 
-  std::cout << "Kernel " << kernel_name << "finished with median time = " << median_time << "s."
+  std::cout << "Kernel " << kernel_name << " finished with median time = " << median_time << "s."
             << std::endl;
 
   return median_time;
