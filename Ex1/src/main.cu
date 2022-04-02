@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <string>
 
 #define RGB_COLOR_RANGE 255
 #define GRID_SIZE 256
@@ -145,7 +146,7 @@ bool verifyOutput(IntVec const &output, IntVec const &gt){
  * @param h_colors
  */
 template <typename KERNEL>
-double benchmark_kernel(KERNEL kernel, IntVec const &h_colors, IntVec const &gt, std::string kernel_name = "", 
+double benchmark_kernel(KERNEL kernel, IntVec const &h_colors, IntVec const &gt, std::string filename, std::string kernel_name = "", std::string input_name = "",
                         size_t grid_size = GRID_SIZE, size_t block_size = BLOCK_SIZE,
                         size_t repetitions = 10)
 {
@@ -195,18 +196,29 @@ double benchmark_kernel(KERNEL kernel, IntVec const &h_colors, IntVec const &gt,
   std::cout << "Kernel " << kernel_name << " finished with median time = " << median_time << "s."
             << std::endl;
 
+  std::ofstream stream;
+  stream.open(filename, std::ios::app);
+  stream << "\n" << kernel_name << "," << input_name << "," << median_time;
+  stream.close();
+
   return median_time;
 }
 
 int main()
 {
-  srand(0);
+  std::string filename = "results.csv";
+
+  std::ofstream stream;
+  stream.open(filename);
+  stream << "kernel,input,runtime";
+  stream.close();
+
   // auto input_pair = input::loadImageFromFile("./input_data/sample.png", input::image_type::GRAYSCALE);
   // auto input_pair = input::generateUniformlyDistributedArray(1e-10, 5);
   auto input_pair = input::generateRandomArray(1e-20, 5);
   auto image = input_pair.first;
   auto gt = input_pair.second;
-  benchmark_kernel(histogram_original, image, gt, "original loops");
-  benchmark_kernel(histogram_noloop, image, gt, "original no loops");
+  benchmark_kernel(histogram_original, image, gt, filename, "original loops", "random_5");
+  benchmark_kernel(histogram_noloop, image, gt, filename, "original no loops", "random_5");
 	
 }
