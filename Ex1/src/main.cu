@@ -97,7 +97,33 @@ __global__ void histogram_tlb_blr(int* buckets, int* pixels, int num_pixels)  //
     }
 }
 
+__global__ void histogram_linear(int *buckets, int *colors, size_t n_colors)
+{
+  // shared memory within the block
+  __shared__ int local_sums[BLOCK_SIZE];
 
+  // thread local variable
+  int sum = 0;
+
+  for (unsigned int i = threadIdx.x; i < n_colors; i += blockDim.x)
+  {
+    if (colors[i] == blockIdx.x)
+      sum += 1;
+  }
+
+  local_sums[threadIdx.x] = sum;
+  
+  for (unsigned int range = blockDim.x / 2; range > 0; range /= 2)
+  {
+    __syncthreads();
+    if (threadIdx.x < range)
+      local_sums[threadIdx.x] += local_sums[threadIdx.x + range];
+  }
+
+  if (threadIdx.x == 0)
+    colors[blockIdx.x] = local_sums[0];
+  
+}
 
 
 /******************
@@ -218,7 +244,18 @@ int main()
   auto input_pair = input::generateRandomArray(1e-20, 5);
   auto image = input_pair.first;
   auto gt = input_pair.second;
-  benchmark_kernel(histogram_original, image, gt, filename, "original loops", "random_5");
-  benchmark_kernel(histogram_noloop, image, gt, filename, "original no loops", "random_5");
-	
+  benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_5");
+  benchmark_kernel(histogram_noloop, image, gt, filename, "histogram_noloop", "random_5");
+	benchmark_kernel(histogram_tlb, image, gt, filename, "histogram_tlb", "random_5");
+  benchmark_kernel(histogram_tlb_blr, image, gt, filename, "histogram_tlb_blr", "random_5");
+  benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_5");
+
+  input_pair = input::generateRandomArray(1e-20, 256);
+  image = input_pair.first;
+  gt = input_pair.second;
+  benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_256");
+  benchmark_kernel(histogram_noloop, image, gt, filename, "histogram_noloop", "random_256");
+	benchmark_kernel(histogram_tlb, image, gt, filename, "histogram_tlb", "random_256");
+  benchmark_kernel(histogram_tlb_blr, image, gt, filename, "histogram_tlb_blr", "random_256");
+  benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_256");
 }

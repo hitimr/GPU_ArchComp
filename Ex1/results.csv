@@ -1,3 +1,11 @@
 kernel,input,runtime
-original loops,random_5,8.866e-06
-original no loops,random_5,8.416e-06
+histogram_original,random_5,7.163e-06
+histogram_noloop,random_5,6.963e-06
+histogram_tlb,random_5,0.000703441
+histogram_tlb_blr,random_5,0.00123846
+histogram_linear,random_5,2.4e-07
+histogram_original,random_256,2.4e-07
+histogram_noloop,random_256,2.41e-07
+histogram_tlb,random_256,2.41e-07
+histogram_tlb_blr,random_256,2.41e-07
+histogram_linear,random_256,2.4e-07
