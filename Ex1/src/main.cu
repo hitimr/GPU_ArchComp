@@ -241,7 +241,7 @@ int main()
 
   // auto input_pair = input::loadImageFromFile("./input_data/sample.png", input::image_type::GRAYSCALE);
   // auto input_pair = input::generateUniformlyDistributedArray(1e-10, 5);
-  auto input_pair = input::generateRandomArray(1e-20, 5);
+  auto input_pair = input::generateRandomArray(1e6, 5);
   auto image = input_pair.first;
   auto gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_5");
@@ -250,7 +250,7 @@ int main()
   benchmark_kernel(histogram_tlb_blr, image, gt, filename, "histogram_tlb_blr", "random_5");
   benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_5");
 
-  input_pair = input::generateRandomArray(1e-20, 256);
+  input_pair = input::generateRandomArray(1e6, 256);
   image = input_pair.first;
   gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_256");
