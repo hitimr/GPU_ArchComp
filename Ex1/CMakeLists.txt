@@ -6,4 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "-O3 -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall")
 
+message("Run directory: ${CMAKE_SOURCE_DIR}")
+
 add_subdirectory(src)

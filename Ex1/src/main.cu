@@ -1,4 +1,5 @@
 #include "timer.hpp"
+#include "input.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -50,6 +51,18 @@ IntVec generate_random_array(size_t len)
   return arr;
 }
 
+bool verifyOutput(IntVec const &output, IntVec const &gt){
+
+  for(size_t i = 0; i < output.size(); ++i){
+    if(output[i] != gt[i]){
+      std::cout << "Wrong output" << std::endl;
+      return false;
+    }
+  }
+  
+  return true;
+}
+
 /******************
  *
  * Add other Array generating functions here
@@ -68,7 +81,7 @@ IntVec generate_random_array(size_t len)
  * @param h_colors
  */
 template <typename KERNEL>
-double benchmark_kernel(KERNEL kernel, IntVec const &h_colors, std::string kernel_name = "",
+double benchmark_kernel(KERNEL kernel, IntVec const &h_colors, IntVec const &gt, std::string kernel_name = "", 
                         size_t grid_size = GRID_SIZE, size_t block_size = BLOCK_SIZE,
                         size_t repetitions = 10)
 {
@@ -109,6 +122,7 @@ double benchmark_kernel(KERNEL kernel, IntVec const &h_colors, std::string kerne
   // Benchmark end
 
   cudaMemcpy(h_buckets.data(), d_buckets, bytes_buckets, cudaMemcpyDeviceToHost);
+  verifyOutput(h_buckets, gt);
 
   cudaFree(d_colors);
   cudaFree(d_buckets);
@@ -123,8 +137,11 @@ double benchmark_kernel(KERNEL kernel, IntVec const &h_colors, std::string kerne
 int main()
 {
   srand(0);
-  IntVec colors = generate_random_array((int)1e6);
-
-  benchmark_kernel(histogram_original, colors, "original loops");
-  benchmark_kernel(histogram_noloop, colors, "original no loops");
+  // auto input_pair = input::loadImageFromFile("./input_data/sample.png", input::image_type::GRAYSCALE);
+  // auto input_pair = input::generateUniformlyDistributedArray(1e-10, 5);
+  auto input_pair = input::generateRandomArray(1e-20, 5);
+  auto image = input_pair.first;
+  auto gt = input_pair.second;
+  benchmark_kernel(histogram_original, image, gt, "original loops");
+  benchmark_kernel(histogram_noloop, image, gt, "original no loops");
 }
