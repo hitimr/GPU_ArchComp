@@ -35,6 +35,70 @@ __global__ void histogram_original(int *buckets, int *colors, size_t n_colors)
   }
 }
 
+__global__ void histogram_tlb(int* buckets, int* pixels, int num_pixels) // tlb: thread-local buckets
+//__global__ void histogram_tlb(int* pixels, int num_pixels, int* buckets) // tlb: thread-local buckets
+{
+    int global_idx = threadIdx.x + blockDim.x * blockIdx.x;
+    int num_threads = blockDim.x * gridDim.x;
+
+    int loc_buc[RGB_COLOR_RANGE];
+
+    for(int i = 0; i < RGB_COLOR_RANGE; ++i)
+        loc_buc[i] = 0;
+
+    int c;
+    for(int i = global_idx; i < num_pixels; i += num_threads){
+        c = pixels[i];
+        loc_buc[c]++;
+    }
+
+    for(int i = 0; i < RGB_COLOR_RANGE; ++i)
+        atomicAdd(&buckets[i],loc_buc[i]);
+}
+
+
+__global__ void histogram_tlb_blr(int* buckets, int* pixels, int num_pixels)  // tlb_blr: thread-local buckets, block-level reduction
+//__global__ void histogram_tlb_blr(int* pixels, int num_pixels, int* buckets) // tlb_blr: thread-local buckets, block-level reduction
+{ 
+    int global_idx = threadIdx.x + blockDim.x * blockIdx.x;
+    int num_threads = gridDim.x * blockDim.x;
+    int loc_buc[RGB_COLOR_RANGE];
+    int c;
+
+    for(int i = 0; i < RGB_COLOR_RANGE; ++i)
+        loc_buc[i] = 0;
+
+    // fill thread - local buckets
+    for(int i = global_idx; i < num_pixels; i += num_threads){
+        c = pixels[i];
+        loc_buc[c]++;
+    }
+
+    // perform block level reduction for each color
+    // ----------------------------------------------
+    // this shared array can only hold one single color at once - so we recycle it once for each color (we do not have enough SM-local memory for a 256x256 array)
+    __shared__ int block_buc[BLOCK_SIZE]; 
+    for(int col_idx = 0; col_idx < RGB_COLOR_RANGE; ++col_idx){
+
+        // initialize shared array with thread-local resuls
+        block_buc[threadIdx.x] = loc_buc[col_idx];
+
+        // do the block-level reduction
+        for(int stride = blockDim.x/2; stride>0; stride/=2){
+            __syncthreads();
+            if (threadIdx.x < stride)
+                block_buc[threadIdx.x] += block_buc[threadIdx.x + stride];
+    	}
+
+        // one atomicAdd() by the index-0-thread
+        if(threadIdx.x == 0)
+            atomicAdd(&buckets[col_idx], block_buc[0]);
+    }
+}
+
+
+
+
 /******************
  *
  * Add other Kernels here
@@ -144,4 +208,5 @@ int main()
   auto gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, "original loops");
   benchmark_kernel(histogram_noloop, image, gt, "original no loops");
+	
 }
