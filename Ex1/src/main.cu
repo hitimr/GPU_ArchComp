@@ -54,7 +54,10 @@ __global__ void histogram_tlb(int* buckets, int* pixels, int num_pixels) // tlb:
     }
 
     for(int i = 0; i < RGB_COLOR_RANGE; ++i)
-        atomicAdd(&buckets[i],loc_buc[i]);
+    {
+        size_t index = (i+threadIdx.x)%RGB_COLOR_RANGE;
+        atomicAdd(&buckets[index],loc_buc[index]);
+    }
 }
 
 
