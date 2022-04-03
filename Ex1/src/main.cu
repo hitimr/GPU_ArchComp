@@ -121,7 +121,7 @@ __global__ void histogram_linear(int *buckets, int *colors, size_t n_colors)
   }
 
   if (threadIdx.x == 0)
-    colors[blockIdx.x] = local_sums[0];
+    buckets[blockIdx.x] = local_sums[0];
   
 }
 
@@ -239,9 +239,11 @@ int main()
   stream << "kernel,input,runtime";
   stream.close();
 
+  int random_size = 1e6;
+
   // auto input_pair = input::loadImageFromFile("./input_data/sample.png", input::image_type::GRAYSCALE);
   // auto input_pair = input::generateUniformlyDistributedArray(1e-10, 5);
-  auto input_pair = input::generateRandomArray(1e6, 5);
+  auto input_pair = input::generateRandomArray(random_size, 5);
   auto image = input_pair.first;
   auto gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_5");
@@ -250,7 +252,25 @@ int main()
   benchmark_kernel(histogram_tlb_blr, image, gt, filename, "histogram_tlb_blr", "random_5");
   benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_5");
 
-  input_pair = input::generateRandomArray(1e6, 256);
+  input_pair = input::generateRandomArray(random_size, 1);
+  image = input_pair.first;
+  gt = input_pair.second;
+  benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_1");
+  benchmark_kernel(histogram_noloop, image, gt, filename, "histogram_noloop", "random_1");
+	benchmark_kernel(histogram_tlb, image, gt, filename, "histogram_tlb", "random_1");
+  benchmark_kernel(histogram_tlb_blr, image, gt, filename, "histogram_tlb_blr", "random_1");
+  benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_1");
+
+  input_pair = input::generateRandomArray(random_size, 2);
+  image = input_pair.first;
+  gt = input_pair.second;
+  benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_2");
+  benchmark_kernel(histogram_noloop, image, gt, filename, "histogram_noloop", "random_2");
+	benchmark_kernel(histogram_tlb, image, gt, filename, "histogram_tlb", "random_2");
+  benchmark_kernel(histogram_tlb_blr, image, gt, filename, "histogram_tlb_blr", "random_2");
+  benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_2");
+
+  input_pair = input::generateRandomArray(random_size, 256);
   image = input_pair.first;
   gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_256");
