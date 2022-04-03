@@ -271,7 +271,7 @@ int main()
   stream << "kernel,input,runtime";
   stream.close();
 
-  int random_size = 1920*1080;
+  int random_size = 3840*2160;
 
   // auto input_pair = input::loadImageFromFile("./input_data/sample.png", input::image_type::GRAYSCALE);
   // auto input_pair = input::generateUniformlyDistributedArray(1e-10, 5);
