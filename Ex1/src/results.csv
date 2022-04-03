@@ -1,0 +1,5 @@
+kernel,input,runtime
+histogram_original,random_1,0.00119034
+histogram_tlb,random_1,0.00236674
+histogram_tlb_blr,random_1,0.00202565
+histogram_linear,random_1,0.00294038

@@ -8,7 +8,7 @@
 ```bash
 mkdir build
 cd build
-cmake ..
+cmake -D CMAKE_BUILD_TYPE=Release ..
 make
 ```
 

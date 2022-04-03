@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 
-#define RGB_COLOR_RANGE 255
+#define RGB_COLOR_RANGE 256
 #define GRID_SIZE 256
 #define BLOCK_SIZE 256
 
@@ -130,21 +130,33 @@ __global__ void histogram_linear(int *buckets, int *colors, size_t n_colors)
 
 __global__ void histogram_block_partition(int *buckets, int *colors, size_t n_colors)
 {
+  int global_idx = threadIdx.x + blockDim.x * blockIdx.x;
+  int num_threads = gridDim.x * blockDim.x;
+
   // shared memory within the block
   __shared__ int local_buckets[RGB_COLOR_RANGE];
-  size_t work_per_block = int(ceil(float(n_colors)/float(gridDim.x)));
+  for(size_t i = threadIdx.x; i < RGB_COLOR_RANGE; i+=blockDim.x)
+  {
+      local_buckets[i] = 0;
+  }
 
-  for (unsigned int i = blockIdx.x * work_per_block + threadIdx.x; i < n_colors && i < (blockIdx.x+1) * work_per_block; i += blockDim.x)
+   __syncthreads();  
+  for (unsigned int i = global_idx; i < n_colors; i += num_threads)
   {
     int c = colors[i];
     atomicAdd(&local_buckets[c], 1);
   }
-  
-  for (unsigned int i = threadIdx.x; i < RGB_COLOR_RANGE; i += blockDim.x)
+
+  __syncthreads();
+  //if(threadIdx.x == 0)
+  if(true)
   {
-    atomicAdd(&buckets[i], local_buckets[i]);
-  }
-  
+    //for (size_t i = 0; i < RGB_COLOR_RANGE; i++)
+    for(size_t i = threadIdx.x; i < RGB_COLOR_RANGE; i+=blockDim.x)
+    {
+      atomicAdd(&buckets[i], local_buckets[i]);
+    }
+  } 
 }
 /******************
  *
@@ -218,9 +230,10 @@ double benchmark_kernel(KERNEL kernel, IntVec const &h_colors, IntVec const &gt,
 
   for (size_t j = 0; j < repetitions; j++)
   {
+    cudaMemset(d_buckets, 0, bytes_buckets);
     cudaDeviceSynchronize(); // make sure gpu is ready
     start_time = timer.get();
-
+    
     kernel<<<grid_size, block_size>>>(d_buckets, d_colors, h_colors.size());
 
     cudaDeviceSynchronize(); // make sure gpu is done
@@ -232,15 +245,17 @@ double benchmark_kernel(KERNEL kernel, IntVec const &h_colors, IntVec const &gt,
 
   // Benchmark end
 
+  // TODO: proper output in .csv format
+  std::cout << "Kernel " << kernel_name << " finished with median time = " << median_time << "s."
+            << std::endl;
+
   cudaMemcpy(h_buckets.data(), d_buckets, bytes_buckets, cudaMemcpyDeviceToHost);
   verifyOutput(h_buckets, gt);
 
   cudaFree(d_colors);
   cudaFree(d_buckets);
 
-  // TODO: proper output in .csv format
-  std::cout << "Kernel " << kernel_name << " finished with median time = " << median_time << "s."
-            << std::endl;
+
 
   std::ofstream stream;
   stream.open(filename, std::ios::app);
@@ -269,7 +284,7 @@ int main()
   auto image = input_pair.first;
   auto gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_1");
-  benchmark_kernel(histogram_noloop, image, gt, filename, "histogram_noloop", "random_1");
+  // benchmark_kernel(histogram_noloop, image, gt, filename, "histogram_noloop", "random_1");
 	benchmark_kernel(histogram_tlb, image, gt, filename, "histogram_tlb", "random_1");
   benchmark_kernel(histogram_tlb_blr, image, gt, filename, "histogram_tlb_blr", "random_1");
   benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_1");
@@ -279,7 +294,7 @@ int main()
   image = input_pair.first;
   gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_2");
-  benchmark_kernel(histogram_noloop, image, gt, filename, "histogram_noloop", "random_2");
+  // benchmark_kernel(histogram_noloop, image, gt, filename, "histogram_noloop", "random_2");
 	benchmark_kernel(histogram_tlb, image, gt, filename, "histogram_tlb", "random_2");
   benchmark_kernel(histogram_tlb_blr, image, gt, filename, "histogram_tlb_blr", "random_2");
   benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_2");
@@ -289,7 +304,7 @@ int main()
   image = input_pair.first;
   gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_5");
-  benchmark_kernel(histogram_noloop, image, gt, filename, "histogram_noloop", "random_5");
+  // benchmark_kernel(histogram_noloop, image, gt, filename, "histogram_noloop", "random_5");
 	benchmark_kernel(histogram_tlb, image, gt, filename, "histogram_tlb", "random_5");
   benchmark_kernel(histogram_tlb_blr, image, gt, filename, "histogram_tlb_blr", "random_5");
   benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_5");
@@ -299,7 +314,7 @@ int main()
   image = input_pair.first;
   gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_256");
-  benchmark_kernel(histogram_noloop, image, gt, filename, "histogram_noloop", "random_256");
+  // benchmark_kernel(histogram_noloop, image, gt, filename, "histogram_noloop", "random_256");
 	benchmark_kernel(histogram_tlb, image, gt, filename, "histogram_tlb", "random_256");
   benchmark_kernel(histogram_tlb_blr, image, gt, filename, "histogram_tlb_blr", "random_256");
   benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_256");
