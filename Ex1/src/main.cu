@@ -148,10 +148,7 @@ __global__ void histogram_block_partition(int *buckets, int *colors, size_t n_co
   }
 
   __syncthreads();
-  //if(threadIdx.x == 0)
-  if(true)
   {
-    //for (size_t i = 0; i < RGB_COLOR_RANGE; i++)
     for(size_t i = threadIdx.x; i < RGB_COLOR_RANGE; i+=blockDim.x)
     {
       atomicAdd(&buckets[i], local_buckets[i]);
@@ -274,7 +271,7 @@ int main()
   stream << "kernel,input,runtime";
   stream.close();
 
-  int random_size = 1e6;
+  int random_size = 1920*1080;
 
   // auto input_pair = input::loadImageFromFile("./input_data/sample.png", input::image_type::GRAYSCALE);
   // auto input_pair = input::generateUniformlyDistributedArray(1e-10, 5);
