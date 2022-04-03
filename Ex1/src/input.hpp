@@ -1,5 +1,6 @@
 #include <vector>
 #include <iostream>
+#include <assert.h>
 #include "lodepng.h"
 
 namespace input{
@@ -19,6 +20,7 @@ namespace input{
         if(!error) error = lodepng::decode(image_tmp, width, height, png);
 
         if(error) std::cout << "decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+        assert(!error);
 
         std::vector<int> histogram(256);
         std::vector<int> image;
