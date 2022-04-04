@@ -1,0 +1,11 @@
+kernel,input,runtime
+histogram_original,640x426,7.2987e-05
+histogram_tlb,640x426,0.00147181
+histogram_tlb_blr,640x426,0.0011996
+histogram_linear,640x426,0.000353854
+histogram_block_partition,640x426,1.053e-05
+histogram_original,5184x3456,0.00410471
+histogram_tlb,5184x3456,0.0167993
+histogram_tlb_blr,5184x3456,0.016028
+histogram_linear,5184x3456,0.044899
+histogram_block_partition,5184x3456,0.000325582
