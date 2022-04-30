@@ -2,6 +2,8 @@
 
 Midterm check of the project: Tuesday 17 May 2022
 
+- Running Pipeline with 1 CUDA Algorithm
+
 Final delivery of the project: Monday 20 June 2022
 
 Presenation and discussion of the project:  Tuesday 28 June 2022
