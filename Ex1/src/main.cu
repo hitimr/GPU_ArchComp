@@ -263,13 +263,14 @@ double benchmark_kernel(KERNEL kernel, IntVec const &h_colors, IntVec const &gt,
 }
 
 
-void run_benchmark(const std::pair<std::vector<int>, std::vector<int>>& input_pair, std::string filename)
+void run_random_benchmark(const int size, std::string filename)
 {
   std::ofstream stream;
   stream.open(filename);
   stream << "kernel,input,runtime";
   stream.close();
 
+  auto input_pair = input::generateRandomArray(size, 1);
   auto image = input_pair.first;
   auto gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_1");
@@ -279,6 +280,7 @@ void run_benchmark(const std::pair<std::vector<int>, std::vector<int>>& input_pa
   benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_1");
   benchmark_kernel(histogram_block_partition, image, gt, filename, "histogram_block_partition", "random_1");
 
+  input_pair = input::generateRandomArray(size, 2);
   image = input_pair.first;
   gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_2");
@@ -288,6 +290,7 @@ void run_benchmark(const std::pair<std::vector<int>, std::vector<int>>& input_pa
   benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_2");
   benchmark_kernel(histogram_block_partition, image, gt, filename, "histogram_block_partition", "random_2");
 
+  input_pair = input::generateRandomArray(size, 5);
   image = input_pair.first;
   gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_5");
@@ -297,6 +300,7 @@ void run_benchmark(const std::pair<std::vector<int>, std::vector<int>>& input_pa
   benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "random_5");
   benchmark_kernel(histogram_block_partition, image, gt, filename, "histogram_block_partition", "random_5");
 
+  input_pair = input::generateRandomArray(size, 256);
   image = input_pair.first;
   gt = input_pair.second;
   benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "random_256");
@@ -309,68 +313,32 @@ void run_benchmark(const std::pair<std::vector<int>, std::vector<int>>& input_pa
 
 int main()
 {
-  // Random data 1 color
-  {    
-    std::cout << "Benchmarking with single color" << std::endl;
-    std::vector<int> random_sizes({640*426, 1920*1080, 3840*2160});
-    std::vector<std::string> fileNames({"output/random1_640x426.csv", "output/random1_1920x1080.csv", "output/random1_3840x2160.csv"});
+  run_random_benchmark(640*426, "output/random_640x426.csv");
+  run_random_benchmark(3840*2160, "output/random_3840x2160.csv");
 
-    for (size_t i = 0; i < random_sizes.size(); i++)
-    {
-      auto input_pair = input::generateRandomArray(random_sizes[i], 1);
-      run_benchmark(input_pair, fileNames[i]);
-    }
-  }
 
-  // Random data 2 colors
-  {    
-    std::cout << "Benchmarking with 2 colors (approx. 50/50)" << std::endl;
-    std::vector<int> random_sizes({640*426, 1920*1080, 3840*2160});
-    std::vector<std::string> fileNames({"output/random2_640x426.csv", "output/random2_1920x1080.csv", "output/random2_3840x2160.csv"});
+  // benchmark a real image
+  std::ofstream stream;
+  std::string filename = "output/real_image.csv";
+  stream.open(filename);
+  stream << "kernel,input,runtime";
+  stream.close();
 
-    for (size_t i = 0; i < random_sizes.size(); i++)
-    {
-      auto input_pair = input::generateRandomArray(random_sizes[i], 2);
-      run_benchmark(input_pair, fileNames[i]);
-    }
-  }
+  auto input_pair = input::loadImageFromFile("input_data/sample_640x426.png", input::image_type::GRAYSCALE);
+  auto image = input_pair.first;
+  auto gt = input_pair.second;
+  benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "640x426");
+	benchmark_kernel(histogram_tlb, image, gt, filename, "histogram_tlb", "640x426");
+  benchmark_kernel(histogram_tlb_blr, image, gt, filename, "histogram_tlb_blr", "640x426");
+  benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "640x426");
+  benchmark_kernel(histogram_block_partition, image, gt, filename, "histogram_block_partition", "640x426");
 
-  // Random data 256 colors
-  {    
-    std::cout << "Benchmarking with 256 colors, random distribution" << std::endl;
-    std::vector<int> random_sizes({640*426, 1920*1080, 3840*2160});
-    std::vector<std::string> fileNames({"output/random256_640x426.csv", "output/random256_1920x1080.csv", "output/random256_3840x2160.csv"});
-
-    for (size_t i = 0; i < random_sizes.size(); i++)
-    {
-      auto input_pair = input::generateRandomArray(random_sizes[i], 2);
-      run_benchmark(input_pair, fileNames[i]);
-    }
-  }
-
-  // uniform distributed data 256 colors
-  {    
-    std::cout << "Benchmarking uniform disitribution 256 colors" << std::endl;
-    std::vector<int> random_sizes({640*426, 1920*1080, 3840*2160});
-    std::vector<std::string> fileNames({"output/uniform_640x426.csv", "output/uniform_1920x1080.csv", "output/uniform_3840x2160.csv"});
-
-    for (size_t i = 0; i < random_sizes.size(); i++)
-    {
-      auto input_pair = input::generateUniformlyDistributedArray(random_sizes[i], RGB_COLOR_RANGE);
-      run_benchmark(input_pair, fileNames[i]);
-    }
-  }
-
-  // real images
-  {
-    std::cout << "Benchmarking real images" << std::endl;
-    std::vector<std::string> infiles({"input_data/sample_640x426.png", "input_data/sample_1280x853.png", "input_data/sample_1920x1280.png", "input_data/sample_5184x3456.png"});
-    std::vector<std::string> fileNames({"output/sample_640x426.csv", "output/sample_1280x853.csv", "output/sample_1920x1280.csv", "output/sample_5184x3456.csv"});
-
-    for (size_t i = 0; i < infiles.size(); i++)
-    {
-      auto input_pair = input::loadImageFromFile(infiles[i].c_str(), input::image_type::GRAYSCALE);
-      run_benchmark(input_pair, fileNames[i]);
-    }
-  }
+  input_pair = input::loadImageFromFile("input_data/sample_5184x3456.png", input::image_type::GRAYSCALE);
+  image = input_pair.first;
+  gt = input_pair.second;
+  benchmark_kernel(histogram_original, image, gt, filename, "histogram_original", "5184x3456");
+	benchmark_kernel(histogram_tlb, image, gt, filename, "histogram_tlb", "5184x3456");
+  benchmark_kernel(histogram_tlb_blr, image, gt, filename, "histogram_tlb_blr", "5184x3456");
+  benchmark_kernel(histogram_linear, image, gt, filename, "histogram_linear", "5184x3456");
+  benchmark_kernel(histogram_block_partition, image, gt, filename, "histogram_block_partition", "5184x3456");
 }
