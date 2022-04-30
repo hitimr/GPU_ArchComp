@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "Debug Ex2",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Ex1/build/src/ex1",
+            "program": "${workspaceFolder}/Ex2/build/src/ex2",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

@@ -1,0 +1,4 @@
+IndentWidth: 2
+BreakBeforeBraces: Allman
+ColumnLimit: 100
+
