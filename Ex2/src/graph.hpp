@@ -21,11 +21,12 @@ class Graph{
             std::vector<int> column_indices;
             std::vector<int> values;
             
+            int offset = 0;
             for(size_t i = 0; i < this->size; i++){
                 if(i==0){
-                    row_offset.push_back(0);
+                    row_offset.push_back(offset);
                 }
-                int offset = 0;
+
                 for(size_t j = 0; j < this->size; j++){
                     if(adjacency_matrix[i][j] > 0){
                         offset += 1;
