@@ -1,6 +1,10 @@
+//#pragma once
 #include <iostream>
 
 #include "graph.hpp"
+#include "simonstuff.hpp"
+
+
 
 int main()
 {
@@ -9,5 +13,11 @@ int main()
     input.getCOOReepresentation();
     input.getCSRRepresentation();
     input.getELLRepresentation();
+
+    //print_tuple(input.getCOOReepresentation());
+    print_COO(input);
+    my_sorting(input);
+    //print_tuple(20);
+
     return 0;
 }
