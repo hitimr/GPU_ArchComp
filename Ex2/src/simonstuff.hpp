@@ -10,8 +10,6 @@
 
 #include "graph.hpp"
 
-
-
 template <typename T>
 void print_vector(std::vector<T> print_this){
     for(size_t i = 0; i < print_this.size(); ++i){
@@ -19,11 +17,10 @@ void print_vector(std::vector<T> print_this){
     }
 }
 
-
 //void print_tuple(std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> print_this){
 //void print_COO(Graph print_this){
 void print_COO(std::vector<int> coo1, std::vector<int> coo2, std::vector<int> val){
-    std::cout << "printing COO..." << std::endl;
+//    std::cout << "printing COO..." << std::endl;
 
     std::cout << "COO_1 | " << "COO_2 | " << "VAL" << std::endl;
     std::cout << "-------------------------------" << std::endl;
@@ -35,6 +32,18 @@ void print_COO(std::vector<int> coo1, std::vector<int> coo2, std::vector<int> va
     }
 
 }
+
+
+void print_MST(std::vector<int> coo1, std::vector<int> coo2, std::vector<int> val, std::vector<size_t> mst){
+    std::cout << "COO_1 | " << "COO_2 | " << "VAL" << std::endl;
+    std::cout << "-------------------------------" << std::endl;
+
+    for(size_t i = 0; i < mst.size(); ++i){
+        std::cout << coo1[mst[i]] << " | " << coo2[mst[i]] << " | " << val[mst[i]] << std::endl;
+    }
+
+}
+
 
 
 
@@ -101,51 +110,59 @@ void add_node_to_group(const size_t b, const size_t a, std::vector<int> &groups)
 }
 
 
-std::vector<size_t> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val){
+std::vector<size_t> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val, const size_t num_nodes, bool debug = false){
     assert((coo1.size() == coo2.size()) && (coo1.size() == val.size()));
-    std::vector<int> groups(coo1.size(),-1);
+    std::vector<int> groups(num_nodes,-1);
 
     // initialize minimal spanning tree as list of edge indices.
-    std::vector<size_t> mst(coo1.size() - 1, 0);
+    std::vector<size_t> mst(num_nodes - 1, 0);
 
     int number_edges_found = 0;
     int group_counter = 0;
 
+    if (debug) std::cout << "debugging..." << std::endl;
+
     int a, b;
     for(size_t i = 0; i < coo1.size(); ++i){
+        if (debug) std::cout << "debugging... i = " << i << std::endl;
 
-        if (number_edges_found >= coo1.size() - 1) break;
+        if (number_edges_found >= num_nodes - 1) break;
 
         // edge between a and b
         a = coo1[i];
         b = coo2[i];
 
         // if they are in the same group: skip edge
-        if ((groups[a] == groups[b]) && (groups[a] != -1)) 
+        if ((groups[a] == groups[b]) && (groups[a] != -1)) {
+            if (debug) std::cout << "skip edge" << std::endl; 
             continue;
+        }
 
         // if they are both not grouped: create new group
         if ((groups[a] == groups[b]) && (groups[a] == -1)){
-            mst[group_counter] = i;
+            mst[number_edges_found] = i;
             groups[a] = group_counter;
             groups[b] = group_counter;
             group_counter++;
             number_edges_found++;
+            if (debug) std::cout << "create new group with index " << group_counter - 1 << std::endl; 
             continue;
         }
 
         // if one of them belongs to a group: add the other to the group (possibly swallowing their whole group)
         if (groups[a] != -1){
-            mst[group_counter] = i;
+            mst[number_edges_found] = i;
             number_edges_found++;
             add_node_to_group(b, a, groups);
+            if (debug) std::cout << "add second node to first node group" << std::endl; 
             continue;
         }
 
         if (groups[b] != -1){
-            mst[group_counter] = i;
+            mst[number_edges_found] = i;
             number_edges_found++;
             add_node_to_group(a, b, groups);
+            if (debug) std::cout << "add first node to second node group" << std::endl; 
             continue;
         }
     }
@@ -153,3 +170,9 @@ std::vector<size_t> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std:
     return mst;
 }
 
+int total_weight(const std::vector<int> &val, const std::vector<size_t> &mst){
+    int sum = 0;
+    for(size_t i = 0; i < mst.size(); ++i)
+        sum += val[mst[i]];
+    return sum;
+}

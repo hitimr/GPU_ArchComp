@@ -24,11 +24,14 @@ int main()
     std::cout << "printing sorted graph..." << std::endl;
     print_COO(coo1, coo2, val);
 
+    std::cout << "intput.size = " << input.size << std::endl;
     std::cout << "run kruskal..." << std::endl;
-    std::vector<size_t> mst = kruskal(coo1, coo2, val);
+    std::vector<size_t> mst = kruskal(coo1, coo2, val, input.size);
     std::cout << "printing mst as edge indices..." << std::endl;
     print_vector(mst);
-
+    std::cout << "printing mst as edges..." << std::endl;
+    print_MST(coo1, coo2, val, mst);
+    std::cout << "total weight: " <<  total_weight(val,mst) << std::endl;
 
     return 0;
 }
