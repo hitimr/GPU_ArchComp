@@ -3,7 +3,7 @@
 
 #include "graph.hpp"
 #include "simonstuff.hpp"
-
+#include "assert.h"
 
 
 int main()
@@ -14,10 +14,21 @@ int main()
     input.getCSRRepresentation();
     input.getELLRepresentation();
 
-    //print_tuple(input.getCOOReepresentation());
-    print_COO(input);
-    my_sorting(input);
-    //print_tuple(20);
+    std::vector<int> coo1, coo2, val;
+    std::tie(coo1, coo2, val) = input.getCOOReepresentation();
+
+    std::cout << "printing input graph..." << std::endl;
+    print_COO(coo1, coo2, val);
+    std::cout << "run sorting..." << std::endl;
+    my_sorting(coo1, coo2, val);
+    std::cout << "printing sorted graph..." << std::endl;
+    print_COO(coo1, coo2, val);
+
+    std::cout << "run kruskal..." << std::endl;
+    std::vector<size_t> mst = kruskal(coo1, coo2, val);
+    std::cout << "printing mst as edge indices..." << std::endl;
+    print_vector(mst);
+
 
     return 0;
 }

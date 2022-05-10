@@ -1,4 +1,5 @@
 //#pragma once
+#include "assert.h"
 #include <vector>
 #include <iostream>
 #include <tuple>
@@ -10,12 +11,36 @@
 #include "graph.hpp"
 
 
+
 template <typename T>
 void print_vector(std::vector<T> print_this){
     for(size_t i = 0; i < print_this.size(); ++i){
         std::cout << print_this[i] << std::endl;
     }
 }
+
+
+//void print_tuple(std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> print_this){
+//void print_COO(Graph print_this){
+void print_COO(std::vector<int> coo1, std::vector<int> coo2, std::vector<int> val){
+    std::cout << "printing COO..." << std::endl;
+
+    std::cout << "COO_1 | " << "COO_2 | " << "VAL" << std::endl;
+    std::cout << "-------------------------------" << std::endl;
+
+//    std::tie(coo1, coo2, val) = print_this.getCOOReepresentation();
+
+    for(size_t i = 0; i < coo1.size(); ++i){
+        std::cout << coo1[i] << " | " << coo2[i] << " | " << val[i] << std::endl;
+    }
+
+}
+
+
+
+// ----------------------------------------
+//                SORTING
+// ----------------------------------------
 
 // sorting several vectors by one of them... taken from
 //  https://stackoverflow.com/questions/17074324/how-can-i-sort-two-vectors-in-the-same-way-with-criteria-that-uses-only-one-of
@@ -43,80 +68,88 @@ std::vector<T> apply_permutation(
     return sorted_vec;
 }
 
-/* 
-Example use
-vector<MyObject> vectorA;
-vector<int> vectorB;
-
-auto p = sort_permutation(vectorA,
-    [](T const& a, T const& b){ *some comparison* });
-
-vectorA = apply_permutation(vectorA, p);
-vectorB = apply_permutation(vectorB, p);
-*/
-
-void my_sorting(Graph some_graph){
-
-    std::vector<int> c1, c2, val; 
-    std::tie(c1, c2, val) = some_graph.getCOOReepresentation();
-
+void my_sorting(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val){
+    assert((coo1.size() == coo2.size()) && (coo1.size() == val.size()));
+// this sorts the three vectors inplace - i.e. vectors will be changed
     auto p = sort_permutation(val,
         [](int const& a, int const& b){ return (a < b); });
 
     val = apply_permutation(val, p);
-    c1 = apply_permutation(c1, p);
-    c2 = apply_permutation(c2, p);
-
-
-    std::cout << "printing sorted..." << std::endl;
-    std::cout << "COO_1 | " << "COO_2 | " << "VAL" << std::endl;
-    std::cout << "-------------------------------" << std::endl;
-
-    //std::tie(coo1, coo2, val) = print_this.getCOOReepresentation();
-
-    for(size_t i = 0; i < c1.size(); ++i){
-        std::cout << c1[i] << " | " << c2[i] << " | " << val[i] << std::endl;
-    }
+    coo1 = apply_permutation(coo1, p);
+    coo2 = apply_permutation(coo2, p);
 }
 
 
 
+// ----------------------------------------
+//                KRUSKAL
+// ----------------------------------------
 
-//void print_tuple(std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> print_this){
-void print_COO(Graph print_this){
-//void print_tuple(int someint){
-//    std::cout << "this is some int: " << someint << std::endl;
-    std::cout << "printing tuple..." << std::endl;
+void add_node_to_group(const size_t b, const size_t a, std::vector<int> &groups){
+    // this will change the group of all nodes that belong to the group of node b to the group of node a
+    // if b does not belong to a group, it will only set the group of b to group of a
 
-    std::vector<int> coo1, coo2, val; 
-    //coo1 = std::get<0>(print_this.getCOOReepresentation());
+    if (groups[b] == -1) {
+        groups[b] = groups[a];
+        return;
+    }
 
-    std::cout << "COO_1 | " << "COO_2 | " << "VAL" << std::endl;
-    std::cout << "-------------------------------" << std::endl;
+    for(size_t i = 0; i < groups.size(); ++i){
+        if (groups[i] == groups[b])
+            groups[i] = groups[a];
+    }
+}
 
-    std::tie(coo1, coo2, val) = print_this.getCOOReepresentation();
 
+std::vector<size_t> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val){
+    assert((coo1.size() == coo2.size()) && (coo1.size() == val.size()));
+    std::vector<int> groups(coo1.size(),-1);
+
+    // initialize minimal spanning tree as list of edge indices.
+    std::vector<size_t> mst(coo1.size() - 1, 0);
+
+    int number_edges_found = 0;
+    int group_counter = 0;
+
+    int a, b;
     for(size_t i = 0; i < coo1.size(); ++i){
-        std::cout << coo1[i] << " | " << coo2[i] << " | " << val[i] << std::endl;
+
+        if (number_edges_found >= coo1.size() - 1) break;
+
+        // edge between a and b
+        a = coo1[i];
+        b = coo2[i];
+
+        // if they are in the same group: skip edge
+        if ((groups[a] == groups[b]) && (groups[a] != -1)) 
+            continue;
+
+        // if they are both not grouped: create new group
+        if ((groups[a] == groups[b]) && (groups[a] == -1)){
+            mst[group_counter] = i;
+            groups[a] = group_counter;
+            groups[b] = group_counter;
+            group_counter++;
+            number_edges_found++;
+            continue;
+        }
+
+        // if one of them belongs to a group: add the other to the group (possibly swallowing their whole group)
+        if (groups[a] != -1){
+            mst[group_counter] = i;
+            number_edges_found++;
+            add_node_to_group(b, a, groups);
+            continue;
+        }
+
+        if (groups[b] != -1){
+            mst[group_counter] = i;
+            number_edges_found++;
+            add_node_to_group(a, b, groups);
+            continue;
+        }
     }
 
-
-/*
-    temp = std::get<0>(print_this.getCOOReepresentation());
-    std::cout << "first vector: " << std::endl;
-    std::cout << "num elements: " << temp.size() << std::endl;
-    print_vector(temp);
-
-    temp = std::get<1>(print_this.getCOOReepresentation());
-    std::cout << "second vector: " << std::endl;
-    std::cout << "num elements: " << temp.size() << std::endl;
-    print_vector(temp);
-
-    temp = std::get<2>(print_this.getCOOReepresentation());
-    std::cout << "third vector: " << std::endl;
-    std::cout << "num elements: " << temp.size() << std::endl;
-    print_vector(temp);
-
-*/
-
+    return mst;
 }
+
