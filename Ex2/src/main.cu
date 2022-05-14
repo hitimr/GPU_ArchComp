@@ -18,31 +18,29 @@ int main()
     std::vector<int> coo1, coo2, val;
     std::tie(coo1, coo2, val) = input.getCOOReepresentation();
 
+    std::cout << std::endl;
     std::cout << "printing input graph..." << std::endl;
     print_COO(coo1, coo2, val);
-    /*
+    
+    std::cout << std::endl;
     std::cout << "run sorting..." << std::endl;
-    my_sorting(coo1, coo2, val);
+    //my_sorting(coo1, coo2, val);
+    gpu_bubble_sort_mult(val,coo1,coo2);
     std::cout << "printing sorted graph..." << std::endl;
     print_COO(coo1, coo2, val);
 
     std::cout << "intput.size = " << input.size << std::endl;
     std::cout << "run kruskal..." << std::endl;
     std::vector<size_t> mst = kruskal(coo1, coo2, val, input.size);
+
+    std::cout << std::endl;
     std::cout << "printing mst as edge indices..." << std::endl;
     print_vector(mst);
+
+    std::cout << std::endl;
     std::cout << "printing mst as edges..." << std::endl;
     print_MST(coo1, coo2, val, mst);
     std::cout << "total weight: " <<  total_weight(val,mst) << std::endl;
-    */
-
-
-    std::cout << "run bubble sort...  " << std::endl;
-    bubble_sort(val);
-    std::cout << "after sorting:  " << std::endl;
-    print_vector(val);
-    std::cout << "weights are sorted correctly:  " <<  (check_sorting(val) ? "true" : "false") << std::endl;
-
-
+    
     return 0;
 }
