@@ -2,7 +2,8 @@
 #include <iostream>
 
 #include "graph.hpp"
-#include "simonstuff.hpp"
+#include "cpu_kruskal.hpp"
+#include "gpu_sorting.cu"
 #include "assert.h"
 
 
@@ -19,6 +20,7 @@ int main()
 
     std::cout << "printing input graph..." << std::endl;
     print_COO(coo1, coo2, val);
+    /*
     std::cout << "run sorting..." << std::endl;
     my_sorting(coo1, coo2, val);
     std::cout << "printing sorted graph..." << std::endl;
@@ -32,6 +34,15 @@ int main()
     std::cout << "printing mst as edges..." << std::endl;
     print_MST(coo1, coo2, val, mst);
     std::cout << "total weight: " <<  total_weight(val,mst) << std::endl;
+    */
+
+
+    std::cout << "run bubble sort...  " << std::endl;
+    bubble_sort(val);
+    std::cout << "after sorting:  " << std::endl;
+    print_vector(val);
+    std::cout << "weights are sorted correctly:  " <<  (check_sorting(val) ? "true" : "false") << std::endl;
+
 
     return 0;
 }
