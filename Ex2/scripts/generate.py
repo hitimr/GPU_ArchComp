@@ -1,80 +1,75 @@
 import numpy as np
+import pandas as pd
 import igraph as ig
-import os
-NODES = 20
-DENSITY = 0.2
 
-max_edges = NODES * (NODES - 1)
-min_edges = NODES - 1
+import common
+
+# Generate a random, connected graph using Barabasi algorithm
+# Edges are bidirectional with random weigths
 
 
-weight_min = 1
-weight_max = 100
+def generate_graph(n_nodes: int, connectivity: int, w_min=0, w_max=100):
+    """_summary_
 
-num_edges = int(max_edges * DENSITY)
+    Args:
+        n_nodes (int): Number nodes/vertices
+        connectivity (int): Number of nodes to be drawn with every new vertex. Total number 
+        w_min (int, optional): Minimum edge weigth. Defaults to 0
+        w_max (int, optional): Maximum Edge weigth. Defaults to 100
 
-print(f"NUMER of EDGES = {num_edges} - MIN: {min_edges}, MAX: {max_edges}")
-assert num_edges > min_edges
+    Returns:
+        g (pd.DataFrame): Adjecency Matrix as DataFrame in COO-Format (coo1, coo2, weigth) as returned by generate_graph()
+    """
 
-current_edges_num = 0
-adjacency_matrix = np.zeros((NODES, NODES))
-vis = np.zeros((NODES, NODES))
+    # generate bidirectional connected graph
+    # Barabasi does not assign weights though
+    g = ig.Graph.Barabasi(n_nodes, connectivity)
 
-current_density = 0
+    # retrieve edgelist ans assign a new column with random weihts
+    df = g.get_edge_dataframe()
+    df["weigth"] = np.random.randint(low=w_min, high=w_max, size=len(df))
 
-while True:
-    current_edges_num = 0
-    adjacency_matrix = np.zeros((NODES, NODES))
-    vis = np.zeros((NODES, NODES))
+    # create new graph from DataFrame and return it
+    return ig.Graph.DataFrame(df)
 
-    current_density = 0
-    while current_edges_num < num_edges:
-        starting_node = np.random.randint(NODES)
-        end_node = np.random.randint(NODES)
-        if starting_node == end_node:
-            continue
-        if adjacency_matrix[starting_node, end_node] == 0 and adjacency_matrix[end_node, starting_node] == 0:
-            adjacency_matrix[starting_node, end_node] = np.random.randint(weight_min, weight_max)
-            adjacency_matrix[end_node, starting_node] = np.random.randint(weight_min, weight_max)
-        
-            current_edges_num += 1
 
-    g = ig.Graph.Weighted_Adjacency(adjacency_matrix, mode = 'undirected')
+def export_graph(g: pd.DataFrame, filename: str):
+    """Write graph data to [filename] according to the format specified in TUWEL
 
-    if g.is_connected():
-        mst = g.spanning_tree(weights=g.es["weight"],return_tree = False)
-        mst_adj = g.spanning_tree(weights=g.es["weight"],return_tree = True)
-        g.es["color"] = "lightgray"
-        g.es[mst]["color"] = "midnightblue"   
-        g.es["width"] = g.es["weight"]
-        g.es["width"] = [10*x/weight_max for x in g.es["width"]]
-        ig.plot(g)
-        filename = f"{NODES}_{DENSITY}_{weight_min}_{weight_max}.csv"
-        with open('../input_data/'+filename, 'w') as f:
-            f.write(f"H;{NODES};{num_edges};1")
-            for i in range(NODES):
-                for j in range(i+1,NODES):
-                    if(adjacency_matrix[i,j] > 0):
-                        f.write("\n")
-                        f.write(f"E;{i};{j};{int(adjacency_matrix[i,j])}")
-        gt_filename = f"mst_gt_{NODES}_{DENSITY}_{weight_min}_{weight_max}.csv"
+    Args:
+        g (pd.DataFrame): Adjecency Matrix as DataFrame in COO-Format (coo1, coo2, weigth) as returned by generate_graph()
+        filename (str): output filename (absolute path recommended)
+    """
 
-        assert mst_adj.is_connected()
-        mst_adj_mat = mst_adj.get_adjacency()
-        mst_adj_mat = np.array(mst_adj_mat.data)
+    # retrieve edges including weigths
+    df = g.get_edge_dataframe()
 
-        print("Minimum edge weight sum:", sum(g.es[mst]["weight"]))
+    # sort edges by coordinates to ensure correct order
+    df = df.sort_values(by=["source", "target"])
 
-        mst_adj_mat = np.multiply(mst_adj_mat, adjacency_matrix)
+    # add Tags to leftmost columns
+    df["tag"] = "E"
+    df = df[["tag", "target", "source", "weigth"]]  # reorder columns
 
-        with open('../input_data/'+gt_filename, 'w') as f:
-            f.write(f"H;{NODES};{mst_adj.ecount()};1")
-            for i in range(NODES):
-                for j in range(i+1,NODES):
-                    if(mst_adj[i,j] > 0):
-                        f.write("\n")
-                        f.write(f"E;{i};{j};{int(mst_adj_mat[i,j])}")
-        break
-    else:
-        pass
+    # create header by renaming columns names
+    df = df.rename(columns={
+        "tag": "H",
+        "target": str(g.vcount()),
+        "source": str(len(df)),
+        "weigth": "1"}
+    )
 
+    # write to file
+    df.to_csv(filename, sep=";", index=False)
+
+
+def calculate_mst(g: ig.Graph):
+    """Calculate the Minimum spanning Tree of g
+
+    Args:
+        g (ig.Graph): Connected graph with weighted edges
+
+    Returns:
+        ig.Graph: Minimum Spanning Tree-Graph 
+    """
+    return g.spanning_tree(weights=g.get_edge_dataframe()["weigth"])

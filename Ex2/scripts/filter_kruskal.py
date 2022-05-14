@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-proj_root_dir = Path(__file__).parent.parent
+import common
 
 # Union-FInd Data structure for evaluating which Node belongs to what tree
 # https://en.wikipedia.org/wiki/Disjoint-set_data_structure
@@ -90,8 +90,8 @@ def load_graph(filename):
 
 if __name__ == "__main__":
 
-    E = load_graph(proj_root_dir / "input_data/example.csv")
-    MST_gt = load_graph(proj_root_dir / "input_data/example_gt.csv")
+    E = load_graph(common.INPUT_DATA_DIR / "barabasi_100_3.csv")
+    MST_gt = load_graph(common.INPUT_DATA_DIR / "barabasi_100_3_mst_gt.csv")
 
     # regular Kruskal
     print("Regular Kruskal results")
@@ -110,5 +110,6 @@ if __name__ == "__main__":
     # check results
     print("\nMST Ground Truth")
     print(MST_gt)
-    assert np.array_equal(MST_filter_kruskal.values, MST_kruskal.values)
-    assert np.array_equal(MST_filter_kruskal, MST_gt.values)
+
+    sum_gt = MST_gt["weight"].sum()
+    sum = MST_filter_kruskal["weight"].sum()
