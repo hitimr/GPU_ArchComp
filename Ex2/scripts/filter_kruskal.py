@@ -49,11 +49,10 @@ def kruskal(E, T, P):
 # FIlter Kruskal from paper
 # uses regular kruskal as a subroutine
 def filter_kruskal(E, T, P):
-
     # call regular kruskal once the subtree is small enough
     # For now some thresholds dont seem to work. My guess is that sometimes the right pivot-set is empty whicht breaks the code
     # havent had time to debug it yet
-    if len(E) < 8:  # KruskalTheshold. Arbitrary for now
+    if len(E) < 512:  # KruskalTheshold. Arbitrary for now
         return kruskal(E, T, P)
 
     else:
