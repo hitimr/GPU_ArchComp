@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include "graph.hpp"
-#include "cpu_kruskal.hpp"
+#include "kruskal.hpp"
 #include "gpu_sorting.cu"
 #include "assert.h"
 
@@ -21,17 +21,19 @@ int main()
     std::cout << std::endl;
     std::cout << "printing input graph..." << std::endl;
     print_COO(coo1, coo2, val);
-    
+
+    /*    
     std::cout << std::endl;
     std::cout << "run sorting..." << std::endl;
     //my_sorting(coo1, coo2, val);
     gpu_bubble_sort_mult(val,coo1,coo2);
     std::cout << "printing sorted graph..." << std::endl;
     print_COO(coo1, coo2, val);
+    */
 
     std::cout << "intput.size = " << input.size << std::endl;
     std::cout << "run kruskal..." << std::endl;
-    std::vector<size_t> mst = kruskal(coo1, coo2, val, input.size);
+    std::vector<size_t> mst = kruskal_old(coo1, coo2, val, input.size);
 
     std::cout << std::endl;
     std::cout << "printing mst as edge indices..." << std::endl;

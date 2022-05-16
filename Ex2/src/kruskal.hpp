@@ -9,6 +9,10 @@
 #include <numeric>
 
 #include "graph.hpp"
+#include "gpu_sorting.cu"
+
+
+
 
 template <typename T>
 void print_vector(std::vector<T> print_this){
@@ -91,8 +95,54 @@ void my_sorting(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int>
 
 
 // ----------------------------------------
-//                KRUSKAL
+//                NEW KRUSKAL
 // ----------------------------------------
+
+/*
+class UnionFind
+{
+    private: 
+    std::vector<int> parent;
+
+    public:
+    void UnionFind(int size){
+        parent.resize(size);
+        for(size_t i = 0; i < parent.size(); ++i)
+            parent[i] = i;
+    }
+
+    int find(int i){
+        if (parent[i] == i) 
+            return i;
+        else 
+            return find(parent[i]);
+    }
+
+    void link(int i, int j){
+        assert(find(i) != find(j));
+        parent[i] = j;
+    }
+
+    void my_union(int i, int j){
+        if (find(i) != find(j)) 
+            link(i,j);
+    }
+}
+
+
+std::vector<size_t> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val, const size_t num_nodes, bool debug = false){
+
+
+
+}
+*/
+
+// ----------------------------------------
+//                OLD KRUSKAL
+// ----------------------------------------
+
+
+
 
 void add_node_to_group(const size_t b, const size_t a, std::vector<int> &groups){
     // this will change the group of all nodes that belong to the group of node b to the group of node a
@@ -110,8 +160,11 @@ void add_node_to_group(const size_t b, const size_t a, std::vector<int> &groups)
 }
 
 
-std::vector<size_t> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val, const size_t num_nodes, bool debug = false){
+std::vector<size_t> kruskal_old(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val, const size_t num_nodes, bool debug = false){
     assert((coo1.size() == coo2.size()) && (coo1.size() == val.size()));
+
+    gpu_bubble_sort_mult(val,coo1,coo2);
+
     std::vector<int> groups(num_nodes,-1);
 
     // initialize minimal spanning tree as list of edge indices.
