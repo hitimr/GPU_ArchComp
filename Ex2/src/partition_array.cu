@@ -1,6 +1,11 @@
 # pragma once
-#include <iostream>
 #include <algorithm>
+#include <iterator>
+#include <iostream>
+#include <vector>
+
+#define BLOCKSIZE 256
+#define GRIDSIZE 256
 
 
 __global__ void check_array(int* vec, int* smaller, int* greater, size_t size, int threshold){
@@ -14,13 +19,24 @@ __global__ void check_array(int* vec, int* smaller, int* greater, size_t size, i
     }
 }
 
+__global__ void create_partitioned_array(int* values, int* truth_values, int* scanned_values, int* new_array, size_t size)
+{
+    int thread_id = blockIdx.x*blockDim.x + threadIdx.x;
+    int num_threads = blockDim.x * gridDim.x;
+
+    for(size_t i = thread_id; i < size; i += num_threads){
+        if(truth_values[i])
+          new_array[scanned_values[i]-1] = values[i];
+    } 
+}
+
 // first kernel for exclusive scan
 __global__ void scan_kernel_1(int const *X,
                               int *Y,
                               int N,
                               int *carries)
 {
-  __shared__ double shared_buffer[256];
+  __shared__ double shared_buffer[BLOCKSIZE];
   int my_value;
  
   unsigned int work_per_thread = (N - 1) / (gridDim.x * blockDim.x) + 1;
@@ -66,7 +82,7 @@ __global__ void scan_kernel_1(int const *X,
 // second kernel for exclusive scan - exclusive-scan of carries
 __global__ void scan_kernel_2(int *carries)
 {
-  __shared__ int shared_buffer[256];
+  __shared__ int shared_buffer[BLOCKSIZE];
  
   // load data:
   double my_carry = carries[threadIdx.x];
@@ -109,24 +125,88 @@ __global__ void scan_kernel_3(int *Y, int N,
       Y[i] += shared_offset;
 }
 
+ __global__ void makeInclusive(int *Y, int N, const int *X)
+ {
+     for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < N-1; i += gridDim.x * blockDim.x) {
+        Y[i] = Y[i+1];
+    }
+    if (blockDim.x * blockIdx.x + threadIdx.x == 0)
+        Y[N-1] += X[N-1];
+ }
+
  
+// all scan kernels from many cores lecture from Dr. Rupp so far
 void exclusive_scan(int const * input,
                     int       * output, int N)
 {
-  int num_blocks = 256;
-  int threads_per_block = 256;
  
   int *carries;
-  cudaMalloc(&carries, sizeof(int) * num_blocks);
+  cudaMalloc(&carries, sizeof(int) * GRIDSIZE);
  
   // First step: Scan within each thread group and write carries
-  scan_kernel_1<<<num_blocks, threads_per_block>>>(input, output, N, carries);
+  scan_kernel_1<<<GRIDSIZE, BLOCKSIZE>>>(input, output, N, carries);
  
   // Second step: Compute offset for each thread group (exclusive scan for each thread group)
-  scan_kernel_2<<<1, num_blocks>>>(carries);
+  scan_kernel_2<<<1, GRIDSIZE>>>(carries);
  
   // Third step: Offset each thread group accordingly
-  scan_kernel_3<<<num_blocks, threads_per_block>>>(output, N, carries);
+  scan_kernel_3<<<GRIDSIZE, BLOCKSIZE>>>(output, N, carries);
+
+  // Make inclusive
+  makeInclusive<<<GRIDSIZE, BLOCKSIZE>>>(output, N, input);
  
   cudaFree(carries);
+}
+
+
+std::vector<std::vector<int>> partition_on_condition(std::vector<int> &vec, int threshold)
+{
+    size_t size = vec.size();
+    int num_bytes = vec.size() * sizeof(int);
+
+    // allocate
+    int *d_vec, *d_v2, *d_v3, *d_v4, *d_v5, *d_v6, *d_v7;
+    cudaMalloc((void**)&d_vec, num_bytes);
+    cudaMalloc((void**)&d_v2, num_bytes);
+    cudaMalloc((void**)&d_v3, num_bytes);
+    cudaMalloc((void**)&d_v4, num_bytes);
+    cudaMalloc((void**)&d_v5, num_bytes);
+
+    cudaMemcpy(d_vec, vec.data(), num_bytes, cudaMemcpyHostToDevice);
+
+    check_array<<<GRIDSIZE, BLOCKSIZE>>>(d_vec, d_v2, d_v3, size, threshold);
+
+    exclusive_scan(d_v2, d_v4, size);
+    exclusive_scan(d_v3, d_v5, size);
+
+    int sum_smaller[1];
+    int sum_greater[1];
+    cudaMemcpy(sum_smaller, d_v4 + size-1, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(sum_greater, d_v5 + size-1, sizeof(int), cudaMemcpyDeviceToHost);
+
+    cudaMalloc((void**)&d_v6, sizeof(int)*sum_smaller[0]);
+    cudaMalloc((void**)&d_v7, sizeof(int)*sum_greater[0]);
+
+    std::vector<int> partitioned_array_smaller(sum_smaller[0]);
+    std::vector<int> partitioned_array_greater(sum_greater[0]);
+
+    create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(d_vec, d_v2, d_v4, d_v6, size);
+    create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(d_vec, d_v3, d_v5, d_v7, size);
+
+    cudaMemcpy(partitioned_array_smaller.data(), d_v6, sizeof(int)*sum_smaller[0], cudaMemcpyDeviceToHost);
+    cudaMemcpy(partitioned_array_greater.data(), d_v7, sizeof(int)*sum_greater[0], cudaMemcpyDeviceToHost);
+
+    std::vector<std::vector<int>> result(2);
+    result[0] = partitioned_array_smaller;
+    result[1] = partitioned_array_greater;
+
+    cudaFree(d_vec);
+    cudaFree(d_v2);
+    cudaFree(d_v3);
+    cudaFree(d_v4);
+    cudaFree(d_v5);
+    cudaFree(d_v6);
+    cudaFree(d_v7);
+
+    return result;
 }

@@ -29,49 +29,17 @@ int main()
                    return dist(mersenne_engine);
                };
 
-    int size_vector = 10;
-    std::vector<int> vec(size_vector), v2(size_vector), v3(size_vector), v4(size_vector), v5(size_vector);
+    int size_vector = 20;
+    std::vector<int> vec(size_vector);
     std::generate(begin(vec), end(vec), gen);
 
-    size_t size = vec.size();
-    int num_bytes = vec.size() * sizeof(int);
+    std::vector<std::vector<int>> result(2);
 
-    // allocate
-    int *d_vec, *d_v2, *d_v3, *d_v4, *d_v5;
-    cudaMalloc((void**)&d_vec, num_bytes);
-    cudaMalloc((void**)&d_v2, num_bytes);
-    cudaMalloc((void**)&d_v3, num_bytes);
-    cudaMalloc((void**)&d_v4, num_bytes);
-    cudaMalloc((void**)&d_v5, num_bytes);
+    result = partition_on_condition(vec, 5);
 
-    cudaMemcpy(d_vec, vec.data(), num_bytes, cudaMemcpyHostToDevice);
-
-    check_array<<<256, 256>>>(d_vec, d_v2, d_v3, size, 5);
-
-    cudaMemcpy(v2.data(), d_v2, sizeof(int) * vec.size(), cudaMemcpyDeviceToHost);
-    cudaMemcpy(v3.data(), d_v3, sizeof(int) * vec.size(), cudaMemcpyDeviceToHost);
-
-    exclusive_scan(d_v2, d_v4, size);
-    exclusive_scan(d_v3, d_v5, size);
-
-    cudaMemcpy(v4.data(), d_v4, sizeof(int) * vec.size(), cudaMemcpyDeviceToHost);
-    cudaMemcpy(v5.data(), d_v5, sizeof(int) * vec.size(), cudaMemcpyDeviceToHost);
-
-    std::cout << std::endl << "Contents of original: " << std::endl;
     print_vector(vec);
-    std::cout << std::endl << "smaller: " << std::endl;
-    print_vector(v2);
-    std::cout << "greater: " << std::endl;
-    print_vector(v3);
-    std::cout << std::endl << "Now comes the scanning" << std::endl;
-    print_vector(v4);
-    print_vector(v5);
-
-    cudaFree(d_vec);
-    cudaFree(d_v2);
-    cudaFree(d_v3);
-    cudaFree(d_v4);
-    cudaFree(d_v5);
+    print_vector(result[0]);
+    print_vector(result[1]);
 
 
 
