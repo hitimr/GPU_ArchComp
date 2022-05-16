@@ -31,18 +31,34 @@ int main()
     print_COO(coo1, coo2, val);
     */
 
-    std::cout << "intput.size = " << input.size << std::endl;
-    std::cout << "run kruskal..." << std::endl;
-    std::vector<size_t> mst = kruskal_old(coo1, coo2, val, input.size);
-
     std::cout << std::endl;
-    std::cout << "printing mst as edge indices..." << std::endl;
-    print_vector(mst);
+    std::cout << "---------------------------------------------"<< std::endl;
+    std::cout << "intput.size = " << input.size << std::endl;
+    std::cout << "run old kruskal..." << std::endl;
+    std::vector<size_t> mst = kruskal_old(coo1, coo2, val, input.size);
 
     std::cout << std::endl;
     std::cout << "printing mst as edges..." << std::endl;
     print_MST(coo1, coo2, val, mst);
     std::cout << "total weight: " <<  total_weight(val,mst) << std::endl;
-    
+
+/*
+    std::cout << std::endl;
+    std::cout << "printing mst as edge indices..." << std::endl;
+    print_vector(mst);
+*/
+
+    std::tie(coo1, coo2, val) = input.getCOOReepresentation();
+    std::cout << std::endl;
+    std::cout << "---------------------------------------------"<< std::endl;
+    std::cout << "intput.size = " << input.size << std::endl;
+    std::cout << "run new kruskal..." << std::endl;
+    std::vector<int> mst2 = kruskal(coo1, coo2, val, input.size);
+
+    std::cout << std::endl;
+    std::cout << "printing mst as edges..." << std::endl;
+    print_MST(coo1, coo2, val, mst2);
+    std::cout << "total weight: " <<  total_weight(val,mst2) << std::endl;
+
     return 0;
 }

@@ -12,8 +12,6 @@
 #include "gpu_sorting.cu"
 
 
-
-
 template <typename T>
 void print_vector(std::vector<T> print_this){
     for(size_t i = 0; i < print_this.size(); ++i){
@@ -37,8 +35,8 @@ void print_COO(std::vector<int> coo1, std::vector<int> coo2, std::vector<int> va
 
 }
 
-
-void print_MST(std::vector<int> coo1, std::vector<int> coo2, std::vector<int> val, std::vector<size_t> mst){
+template<typename T>
+void print_MST(std::vector<int> coo1, std::vector<int> coo2, std::vector<int> val, std::vector<T> mst){
     std::cout << "COO_1 | " << "COO_2 | " << "VAL" << std::endl;
     std::cout << "-------------------------------" << std::endl;
 
@@ -52,7 +50,7 @@ void print_MST(std::vector<int> coo1, std::vector<int> coo2, std::vector<int> va
 
 
 // ----------------------------------------
-//                SORTING
+//              CPU SORTING
 // ----------------------------------------
 
 // sorting several vectors by one of them... taken from
@@ -93,19 +91,17 @@ void my_sorting(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int>
 }
 
 
-
 // ----------------------------------------
 //                NEW KRUSKAL
 // ----------------------------------------
 
-/*
 class UnionFind
 {
     private: 
     std::vector<int> parent;
 
     public:
-    void UnionFind(int size){
+    UnionFind(size_t size){
         parent.resize(size);
         for(size_t i = 0; i < parent.size(); ++i)
             parent[i] = i;
@@ -127,15 +123,44 @@ class UnionFind
         if (find(i) != find(j)) 
             link(i,j);
     }
-}
+};
 
 
-std::vector<size_t> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val, const size_t num_nodes, bool debug = false){
+std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val, const size_t num_nodes, bool debug = false){
 
+    assert((coo1.size() == coo2.size()) && (coo1.size() == val.size()));
 
+    std::vector<int> T(num_nodes - 1, -1);
+    UnionFind P(val.size());
+    gpu_bubble_sort_mult(val,coo1,coo2);
 
-}
+    // grow MST
+    int tree_pos = 0;
+    for(size_t i =0; i < val.size(); ++i){
+        if (P.find(coo1[i]) != P.find(coo2[i])){
+            T[tree_pos] = i;
+            tree_pos++;
+            P.my_union(coo1[i], coo2[i]);
+        }
+    }
+    return T;
+
+/*
+    // Sort all edges by weight
+    sorted = E.sort_values(by="weight", ascending=True)
+
+    # grow MST
+    for index, edge in sorted.iterrows():
+        if P.find(edge["u"]) != P.find(edge["v"]):
+            T = T.append(edge)
+            P.union(edge["u"], edge["v"])
+    T = T.sort_values(by=["u", "v"]).astype(int)
+    return E, T.reindex(), P
 */
+
+
+}
+
 
 // ----------------------------------------
 //                OLD KRUSKAL
@@ -223,7 +248,9 @@ std::vector<size_t> kruskal_old(std::vector<int> &coo1, std::vector<int> &coo2, 
     return mst;
 }
 
-int total_weight(const std::vector<int> &val, const std::vector<size_t> &mst){
+
+template<typename T>
+int total_weight(const std::vector<int> &val, const std::vector<T> &mst){
     int sum = 0;
     for(size_t i = 0; i < mst.size(); ++i)
         sum += val[mst[i]];
