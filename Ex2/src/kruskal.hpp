@@ -11,7 +11,7 @@
 #include "graph.hpp"
 #include "gpu_sorting.cu"
 
-#define DEBUG
+//#define DEBUG
 
 
 template <typename T>
@@ -118,18 +118,12 @@ class UnionFind
 
     void link(int i, int j){
         assert(find(i) != find(j));
-        parent[find(i)] = j;
-        /*
-        if (parent[j] == j) 
-            parent[i] = j;
-        else 
-            link(i, parent[j]);
-        */
+        parent[i] = j;
     }
 
     void my_union(int i, int j){
         if (find(i) != find(j)) 
-            link(i,j);
+            link(find(i),find(j));
     }
 };
 
@@ -145,8 +139,6 @@ std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::ve
     #ifdef DEBUG
         std::vector<int> find;
         find.resize(num_nodes);
-        //for(int i = 0; i < find.size(); ++i)
-        //   find[i] = i;
     #endif
 
     // grow MST
@@ -155,10 +147,10 @@ std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::ve
         #ifdef DEBUG
             for(int i = 0; i < find.size(); ++i)
                 find[i] = P.find(i);
+            int find1 = P.find(coo1[i]);
+            int find2 = P.find(coo2[i]);
         #endif
 
-        int find1 = P.find(coo1[i]);
-        int find2 = P.find(coo2[i]);
         if (P.find(coo1[i]) != P.find(coo2[i])){
             T[tree_pos] = i;
             tree_pos++;
@@ -187,8 +179,6 @@ std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::ve
 // ----------------------------------------
 //                OLD KRUSKAL
 // ----------------------------------------
-
-
 
 
 void add_node_to_group(const size_t b, const size_t a, std::vector<int> &groups){
