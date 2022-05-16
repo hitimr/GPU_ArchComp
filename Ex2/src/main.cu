@@ -22,14 +22,13 @@ int main()
     std::cout << "printing input graph..." << std::endl;
     print_COO(coo1, coo2, val);
 
-    /*    
     std::cout << std::endl;
+    std::cout << "---------------------------------------------"<< std::endl;
     std::cout << "run sorting..." << std::endl;
     //my_sorting(coo1, coo2, val);
     gpu_bubble_sort_mult(val,coo1,coo2);
     std::cout << "printing sorted graph..." << std::endl;
     print_COO(coo1, coo2, val);
-    */
 
     std::cout << std::endl;
     std::cout << "---------------------------------------------"<< std::endl;

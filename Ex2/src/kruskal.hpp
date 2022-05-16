@@ -11,6 +11,8 @@
 #include "graph.hpp"
 #include "gpu_sorting.cu"
 
+#define DEBUG
+
 
 template <typename T>
 void print_vector(std::vector<T> print_this){
@@ -116,7 +118,13 @@ class UnionFind
 
     void link(int i, int j){
         assert(find(i) != find(j));
-        parent[i] = j;
+        parent[find(i)] = j;
+        /*
+        if (parent[j] == j) 
+            parent[i] = j;
+        else 
+            link(i, parent[j]);
+        */
     }
 
     void my_union(int i, int j){
@@ -131,12 +139,26 @@ std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::ve
     assert((coo1.size() == coo2.size()) && (coo1.size() == val.size()));
 
     std::vector<int> T(num_nodes - 1, -1);
-    UnionFind P(val.size());
+    UnionFind P(num_nodes);
     gpu_bubble_sort_mult(val,coo1,coo2);
+
+    #ifdef DEBUG
+        std::vector<int> find;
+        find.resize(num_nodes);
+        //for(int i = 0; i < find.size(); ++i)
+        //   find[i] = i;
+    #endif
 
     // grow MST
     int tree_pos = 0;
-    for(size_t i =0; i < val.size(); ++i){
+    for(int i = 0; i < val.size(); ++i){
+        #ifdef DEBUG
+            for(int i = 0; i < find.size(); ++i)
+                find[i] = P.find(i);
+        #endif
+
+        int find1 = P.find(coo1[i]);
+        int find2 = P.find(coo2[i]);
         if (P.find(coo1[i]) != P.find(coo2[i])){
             T[tree_pos] = i;
             tree_pos++;
