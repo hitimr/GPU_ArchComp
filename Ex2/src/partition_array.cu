@@ -1,11 +1,18 @@
+// This implementation makes use of an exclusive scan.
+// The general structure of the exclusive scan and most parts in the respective 2 kernel codes are taken
+// from Dr. Rupp's lecture "Computational Sciende on Many Core Architectures", Exercise 5. We simplified it a bit to
+// be restricted to work when GRIDSIZE == BLOCKSIZE. That saves us launching one intermediate kernel to
+// perform an exclusive scan on the carries array.
+
 # pragma once
 #include <algorithm>
 #include <iterator>
 #include <iostream>
 #include <vector>
+#include <numeric>
 
-#define BLOCKSIZE 256
 #define GRIDSIZE 256
+#define BLOCKSIZE GRIDSIZE
 
 
 __global__ void check_array(int* vec, int* smaller, int* greater, size_t size, int threshold){
@@ -31,12 +38,14 @@ __global__ void create_partitioned_array(int* values, int* truth_values, int* sc
 }
 
 // first kernel for exclusive scan
-__global__ void scan_kernel_1(int const *X,
-                              int *Y,
-                              int N,
-                              int *carries)
+// the whole array X to be scanned gets contigously distributed among the blocks.
+// every block performs an exclusive scan on its array and writes the results to Y.
+// Y then is partly exclusively scanned. what is still missing, is adding the end value of block
+// i-1 to all elements in block i. This will later happen in a second kernel. 
+// all the blockoffsets get stored in carries.
+__global__ void scan_kernel_1(int const *X, int *Y, int N, int *carries)
 {
-  __shared__ double shared_buffer[BLOCKSIZE];
+ __shared__ double shared_buffer[BLOCKSIZE];
   int my_value;
  
   unsigned int work_per_thread = (N - 1) / (gridDim.x * blockDim.x) + 1;
@@ -44,7 +53,8 @@ __global__ void scan_kernel_1(int const *X,
   unsigned int block_stop  = work_per_thread * blockDim.x * (blockIdx.x + 1);
   unsigned int block_offset = 0;
  
-  // run scan on each section
+  // run scan on each section, this for loop is necessary if there are more elements in the array
+  // than there are threads in total.
   for (unsigned int i = block_start + threadIdx.x; i < block_stop; i += blockDim.x)
   {
     // load data:
@@ -63,9 +73,6 @@ __global__ void scan_kernel_1(int const *X,
     shared_buffer[threadIdx.x] = my_value;
     __syncthreads();
  
-    // exclusive scan requires us to write a zero value at the beginning of each block
-    my_value = (threadIdx.x > 0) ? shared_buffer[threadIdx.x - 1] : 0;
- 
     // write to output array
     if (i < N)
       Y[i] = block_offset + my_value;
@@ -76,19 +83,23 @@ __global__ void scan_kernel_1(int const *X,
   // write carry:
   if (threadIdx.x == 0)
     carries[blockIdx.x] = block_offset;
- 
 }
- 
-// second kernel for exclusive scan - exclusive-scan of carries
-__global__ void scan_kernel_2(int *carries)
+
+// Y is partly exclusively scanned. Here the offsets of each block get added.
+__global__ void scan_kernel_2(int *Y, int N,
+                              int const *carries)
 {
-  __shared__ int shared_buffer[BLOCKSIZE];
+  unsigned int work_per_thread = (N - 1) / (gridDim.x * blockDim.x) + 1;
+  unsigned int block_start = work_per_thread * blockDim.x *  blockIdx.x;
+  unsigned int block_stop  = work_per_thread * blockDim.x * (blockIdx.x + 1);
+ 
+  __shared__ int shared_offset;
+  __shared__ int shared_buffer[GRIDSIZE];
  
   // load data:
-  double my_carry = carries[threadIdx.x];
+  int my_carry = carries[threadIdx.x];
  
-  // exclusive scan in shared buffer:
- 
+  // exclusive scan in the carries array
   for(unsigned int stride = 1; stride < blockDim.x; stride *= 2)
   {
     __syncthreads();
@@ -101,21 +112,8 @@ __global__ void scan_kernel_2(int *carries)
   shared_buffer[threadIdx.x] = my_carry;
   __syncthreads();
  
-  // write to output array
-  carries[threadIdx.x] = (threadIdx.x > 0) ? shared_buffer[threadIdx.x - 1] : 0;
-}
- 
-__global__ void scan_kernel_3(int *Y, int N,
-                              int const *carries)
-{
-  unsigned int work_per_thread = (N - 1) / (gridDim.x * blockDim.x) + 1;
-  unsigned int block_start = work_per_thread * blockDim.x *  blockIdx.x;
-  unsigned int block_stop  = work_per_thread * blockDim.x * (blockIdx.x + 1);
- 
-  __shared__ int shared_offset;
- 
   if (threadIdx.x == 0)
-    shared_offset = carries[blockIdx.x];
+    shared_offset = (blockIdx.x > 0) ? shared_buffer[blockIdx.x-1] : 0;;
  
   __syncthreads();
  
@@ -125,17 +123,11 @@ __global__ void scan_kernel_3(int *Y, int N,
       Y[i] += shared_offset;
 }
 
- __global__ void makeInclusive(int *Y, int N, const int *X)
- {
-     for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < N-1; i += gridDim.x * blockDim.x) {
-        Y[i] = Y[i+1];
-    }
-    if (blockDim.x * blockIdx.x + threadIdx.x == 0)
-        Y[N-1] += X[N-1];
- }
-
  
-// all scan kernels from many cores lecture from Dr. Rupp so far
+// The general structure of the exclusive scan and most parts in the respective kernel codes are taken
+// from Dr. Rupp's lecture "Computational Sciende on Many Core Architectures". We simplified it a bit to
+// be restricted to work when GRIDSIZE == BLOCKSIZE. That saves us launching one intermediate kernel to
+// perform an exclusive scan on the carries array.
 void exclusive_scan(int const * input,
                     int       * output, int N)
 {
@@ -145,15 +137,11 @@ void exclusive_scan(int const * input,
  
   // First step: Scan within each thread group and write carries
   scan_kernel_1<<<GRIDSIZE, BLOCKSIZE>>>(input, output, N, carries);
- 
-  // Second step: Compute offset for each thread group (exclusive scan for each thread group)
-  scan_kernel_2<<<1, GRIDSIZE>>>(carries);
- 
-  // Third step: Offset each thread group accordingly
-  scan_kernel_3<<<GRIDSIZE, BLOCKSIZE>>>(output, N, carries);
 
-  // Make inclusive
-  makeInclusive<<<GRIDSIZE, BLOCKSIZE>>>(output, N, input);
+  cudaDeviceSynchronize();            
+
+  // Second step: Offset each thread group accordingly
+  scan_kernel_2<<<GRIDSIZE, BLOCKSIZE>>>(output, N, carries);
  
   cudaFree(carries);
 }

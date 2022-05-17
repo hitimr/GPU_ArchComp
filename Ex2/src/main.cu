@@ -29,7 +29,7 @@ int main()
                    return dist(mersenne_engine);
                };
 
-    int size_vector = 20;
+    int size_vector = 10;
     std::vector<int> vec(size_vector);
     std::generate(begin(vec), end(vec), gen);
 
