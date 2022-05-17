@@ -128,13 +128,15 @@ class UnionFind
 };
 
 
-std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val, const size_t num_nodes, bool debug = false){
+//std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val, const size_t num_nodes, bool debug = false){
+std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val, UnionFind &P, std::vector<int> &T){
 
     assert((coo1.size() == coo2.size()) && (coo1.size() == val.size()));
 
-    std::vector<int> T(num_nodes - 1, -1);
-    UnionFind P(num_nodes);
-    gpu_bubble_sort_mult(val,coo1,coo2);
+    int num_nodes = T.size() + 1;
+    //std::vector<int> T(num_nodes - 1, -1);
+    //UnionFind P(num_nodes);
+    gpu_bubble_sort_mult(val,coo1,coo2); // this will sort all three arrays according to the values in the first one
 
     #ifdef DEBUG
         std::vector<int> find;
@@ -143,7 +145,7 @@ std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::ve
 
     // grow MST
     int tree_pos = 0;
-    for(int i = 0; i < val.size(); ++i){
+    for(size_t i = 0; i < val.size(); ++i){
         #ifdef DEBUG
             for(int i = 0; i < find.size(); ++i)
                 find[i] = P.find(i);
@@ -171,8 +173,6 @@ std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::ve
     T = T.sort_values(by=["u", "v"]).astype(int)
     return E, T.reindex(), P
 */
-
-
 }
 
 
@@ -197,7 +197,7 @@ void add_node_to_group(const size_t b, const size_t a, std::vector<int> &groups)
 }
 
 
-std::vector<size_t> kruskal_old(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val, const size_t num_nodes, bool debug = false){
+std::vector<size_t> kruskal_old(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val, const int num_nodes, bool debug = false){
     assert((coo1.size() == coo2.size()) && (coo1.size() == val.size()));
 
     gpu_bubble_sort_mult(val,coo1,coo2);
@@ -261,10 +261,26 @@ std::vector<size_t> kruskal_old(std::vector<int> &coo1, std::vector<int> &coo2, 
 }
 
 
-template<typename T>
+template <typename T>
 int total_weight(const std::vector<int> &val, const std::vector<T> &mst){
     int sum = 0;
     for(size_t i = 0; i < mst.size(); ++i)
         sum += val[mst[i]];
+    return sum;
+}
+
+// T is somtimes int sometimes size_t
+template <typename T>
+int count_nodes_MST(const std::vector<int> &coo1, const std::vector<int> &coo2, const std::vector<T> &mst, const int num_nodes){
+    // this counts the nodes of a spanning tree
+    std::vector<bool> check(num_nodes,false);
+
+    for(size_t i = 0; i < mst.size(); ++i){
+        check[coo1[mst[i]]] = true;
+        check[coo2[mst[i]]] = true;
+    }
+    int sum = 0;
+    for(size_t i = 0; i < check.size(); ++i)
+        sum += check[i];    
     return sum;
 }

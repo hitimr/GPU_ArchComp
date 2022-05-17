@@ -34,12 +34,14 @@ int main()
     std::cout << "---------------------------------------------"<< std::endl;
     std::cout << "intput.size = " << input.size << std::endl;
     std::cout << "run old kruskal..." << std::endl;
-    std::vector<size_t> mst = kruskal_old(coo1, coo2, val, input.size);
+    int num_nodes = input.size;
+    std::vector<size_t> mst = kruskal_old(coo1, coo2, val, num_nodes);
 
     std::cout << std::endl;
     std::cout << "printing mst as edges..." << std::endl;
     print_MST(coo1, coo2, val, mst);
     std::cout << "total weight: " <<  total_weight(val,mst) << std::endl;
+    std::cout << "count nodes of the MST: " <<  count_nodes_MST(coo1, coo2, mst, num_nodes) << std::endl;
 
 /*
     std::cout << std::endl;
@@ -52,7 +54,10 @@ int main()
     std::cout << "---------------------------------------------"<< std::endl;
     std::cout << "intput.size = " << input.size << std::endl;
     std::cout << "run new kruskal..." << std::endl;
-    std::vector<int> mst2 = kruskal(coo1, coo2, val, input.size);
+
+    UnionFind P(num_nodes);
+    std::vector<int> T(num_nodes - 1, -1);
+    std::vector<int> mst2 = kruskal(coo1, coo2, val, P, T);
 
     std::cout << std::endl;
     std::cout << "printing mst as edges..." << std::endl;
