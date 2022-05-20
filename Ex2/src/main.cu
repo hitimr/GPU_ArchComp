@@ -1,5 +1,6 @@
-#include "Graph.hpp"
+#include "graph.hpp"
 #include "common.hpp"
+#include "misc.hpp"
 #include <iostream>
 #include <string>
 
@@ -41,13 +42,14 @@ int main(int ac, char **av)
 {
   OptionsT options = parse_options(ac, av);
 
+  // Load input file
   // I havent found a good way for adding defaults tring to boost::options so im doing it by hand
-  std::string input_file = options.count("inputfile")
-                               ? options["inputfile"].as<std::vector<std::string>>()[0]
-                               : DEFAULT_INPUT_FILE;
+  std::string input_file = misc::get_proj_root_dir().append(
+      options.count("inputfile") ? options["inputfile"].as<std::vector<std::string>>()[0]
+                                 : DEFAULT_INPUT_FILE);
 
   std::cout << "Loading " << input_file << std::endl;
-  
+  Graph graph(input_file.c_str());
 
   return 0;
 }

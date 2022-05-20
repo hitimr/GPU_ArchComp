@@ -9,7 +9,7 @@ class Graph{
     public:
         std::vector<std::vector<int>> adjacency_matrix;
         std::vector<std::vector<int>> mst_gt_adjacency_matrix;
-        int size;
+        size_t size;
 
         Graph(const char* filename){
             loadGraphFromFile(filename);
@@ -44,7 +44,7 @@ class Graph{
         std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> getELLRepresentation(){
             std::vector<std::vector<int>> column_indices;
             std::vector<std::vector<int>> values;
-            int max_size = 0;
+            size_t max_size = 0;
 
             for(size_t i = 0; i < this->size; i++){
                 std::vector<int> current_column_indices;
