@@ -3,6 +3,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <cmath>
 
 class Timer
 {
@@ -45,7 +46,8 @@ public:
     for (itr = timings.begin(); itr != timings.end(); itr++)
     {
       double avg = average(itr->first);
-      std::cout << itr->first << ":    " << avg <<  std::endl;
+      double std_dev = std_deviation(itr->first, avg);
+      std::cout << itr->first << "\tµ=" << avg << "\tsigma=" << std_dev << std::endl;
     }
   }
 
@@ -61,5 +63,19 @@ public:
 
     average /= (double)data.size();
     return average;
+  }
+
+  double std_deviation(std::string tag, double avg)
+  {
+    auto data = timings[tag];
+    double sigma2 = 0;
+
+    for (double element : data)
+    {
+      sigma2 += (element - avg) * (element - avg);
+    }
+
+    double sigma = sqrt(sigma2) / (double)data.size();
+    return sigma;
   }
 };
