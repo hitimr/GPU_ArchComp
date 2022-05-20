@@ -1,10 +1,13 @@
 find_package(CUDA REQUIRED)
 
-cuda_add_executable(ex2 main.cu)
+cuda_add_executable(ex2 
+    main.cu 
+    kruskal.cu 
+    sort.cu
+    >)
 
-set(MINIMUM_BOOST_VERSION 1.63.0)
 
-find_package(Boost ${MINIMUM_BOOST_VERSION} REQUIRED COMPONENTS program_options)
+
 target_link_libraries(ex2
     ${Boost_LIBRARIES}
 )

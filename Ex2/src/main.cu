@@ -1,6 +1,7 @@
 #include "graph.hpp"
 #include "common.hpp"
 #include "misc.hpp"
+#include "kruskal.hpp"
 #include <iostream>
 #include <string>
 
