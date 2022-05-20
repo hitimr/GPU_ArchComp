@@ -18,7 +18,7 @@ std::vector<int> Graph::getCoo1()
 }
 
 
-std::vector<int> Graph::getCoo2()
+std::vector<int> Graph::getCoo2() 
 {
   std::vector<int> coo1, coo2, w;
   std::tie(coo1, coo2, w) = getCOOReepresentation();

@@ -1,15 +1,17 @@
-
-#include "union_find.hpp"
+#include "kruskal.hpp"
 #include "sort.hpp"
+#include "union_find.hpp"
 #include <cassert>
 #include <vector>
 
 // std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val,
 // const size_t num_nodes, bool debug = false){
-std::vector<int> kruskal(const Graph & graph, std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val,
-                         UnionFind &P, std::vector<int> &T)
+std::vector<int> kruskal(Graph &graph, UnionFind &P, std::vector<int> &T)
 {
-  
+  std::vector<int> coo1 = graph.getCoo1();
+  std::vector<int> coo2 = graph.getCoo2();
+  std::vector<int> val = graph.getWeights();
+
   assert((coo1.size() == coo2.size()) && (coo1.size() == val.size()));
 
   int num_nodes = T.size() + 1;
@@ -18,10 +20,9 @@ std::vector<int> kruskal(const Graph & graph, std::vector<int> &coo1, std::vecto
 
   // this will sort all three arrays according to the values in the first one
   gpu_bubble_sort_mult(val, coo1, coo2);
-  
 
 #ifdef DEBUG
-      std::vector<int> find;
+  std::vector<int> find;
   find.resize(num_nodes);
 #endif
 
