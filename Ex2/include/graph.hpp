@@ -1,3 +1,4 @@
+#pragma once
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -18,92 +19,15 @@ public:
     print_adj();
   }
 
-  std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> getCSRRepresentation()
-  {
-    std::vector<int> row_offset;
-    std::vector<int> column_indices;
-    std::vector<int> values;
+  std::vector<int> getCoo1();
+  std::vector<int> getCoo2();
+  std::vector<int> getWeights();
 
-    int offset = 0;
-    for (size_t i = 0; i < this->size; i++)
-    {
-      if (i == 0)
-      {
-        row_offset.push_back(offset);
-      }
+  std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> getCSRRepresentation();
 
-      for (size_t j = 0; j < this->size; j++)
-      {
-        if (adjacency_matrix[i][j] > 0)
-        {
-          offset += 1;
-          column_indices.push_back(j);
-          values.push_back(adjacency_matrix[i][j]);
-        }
-      }
-      row_offset.push_back(offset);
-    }
+  std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> getELLRepresentation();
 
-    return std::make_tuple(row_offset, column_indices, values);
-  }
-
-  std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> getELLRepresentation()
-  {
-    std::vector<std::vector<int>> column_indices;
-    std::vector<std::vector<int>> values;
-    size_t max_size = 0;
-
-    for (size_t i = 0; i < this->size; i++)
-    {
-      std::vector<int> current_column_indices;
-      std::vector<int> current_values;
-      for (size_t j = 0; j < this->size; j++)
-      {
-        if (adjacency_matrix[i][j] > 0)
-        {
-          current_column_indices.push_back(j);
-          current_values.push_back(adjacency_matrix[i][j]);
-        }
-      }
-      if (current_column_indices.size() > max_size)
-      {
-        max_size = current_column_indices.size();
-      }
-      column_indices.push_back(current_column_indices);
-      values.push_back(current_values);
-    }
-    for (size_t i = 0; i < this->size; i++)
-    {
-      while (column_indices.size() < max_size)
-      {
-        column_indices[i].push_back(-1);
-        values[i].push_back(-1);
-      }
-    }
-
-    return std::make_tuple(column_indices, values);
-  }
-
-  std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> getCOOReepresentation()
-  {
-    std::vector<int> row_offset;
-    std::vector<int> column_indices;
-    std::vector<int> values;
-
-    for (size_t i = 0; i < this->size; i++)
-    {
-      for (size_t j = 0; j < this->size; j++)
-      {
-        if (adjacency_matrix[i][j] > 0)
-        {
-          row_offset.push_back(i);
-          column_indices.push_back(j);
-          values.push_back(adjacency_matrix[i][j]);
-        }
-      }
-    }
-    return std::make_tuple(row_offset, column_indices, values);
-  }
+  std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> getCOOReepresentation();
 
   bool checkMstSolution(std::vector<std::vector<int>> solution)
   {
@@ -135,7 +59,7 @@ public:
   void loadGraphFromFile(const char *filename)
   {
     {
-      std::string filepath = "../input_data/" + std::string(filename);
+      std::string filepath = std::string(filename);
       std::fstream input_file;
       input_file.open(filepath, std::ios::in);
       std::string current_line;

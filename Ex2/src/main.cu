@@ -5,10 +5,7 @@
 #include <iostream>
 #include <string>
 
-#include <boost/program_options.hpp>
 
-namespace po = boost::program_options;
-using OptionsT = boost::program_options::variables_map;
 
 OptionsT parse_options(int ac, char **av)
 {
@@ -24,7 +21,7 @@ OptionsT parse_options(int ac, char **av)
         "input file containing graph data");
   // clang-format on
 
-  // Bioler-plate Boost options stuff
+  // Boiler-plate Boost options stuff
   po::variables_map vm;
   po::store(po::parse_command_line(ac, av, desc), vm);
   po::notify(vm);

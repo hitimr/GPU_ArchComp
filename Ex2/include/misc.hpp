@@ -1,3 +1,4 @@
+#pragma once
 #ifdef __linux__
 #include <libgen.h>       // dirname
 #include <linux/limits.h> // PATH_MAX

@@ -6,10 +6,10 @@
 
 // std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val,
 // const size_t num_nodes, bool debug = false){
-std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val,
+std::vector<int> kruskal(const Graph & graph, std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val,
                          UnionFind &P, std::vector<int> &T)
 {
-
+  
   assert((coo1.size() == coo2.size()) && (coo1.size() == val.size()));
 
   int num_nodes = T.size() + 1;

@@ -1,3 +1,9 @@
+#pragma once
+
+#include <boost/program_options.hpp>
+namespace po = boost::program_options;
+using OptionsT = boost::program_options::variables_map;
+
 #define EXIT_SUCCESS 0
 
 #define BLOCK_SIZE 256 
@@ -7,3 +13,7 @@
 
 // Options
 #define DEFAULT_INPUT_FILE "input_data/barabasi_200_3_mst_gt.csv"
+
+
+
+// globals
