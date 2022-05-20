@@ -1,8 +1,12 @@
 #pragma once
 
+// Program options
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 using OptionsT = boost::program_options::variables_map;
+
+// Benchmarker
+#include "benchmarker.hpp"
 
 #define EXIT_SUCCESS 0
 

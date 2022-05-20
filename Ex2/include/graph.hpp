@@ -16,7 +16,7 @@ public:
   Graph(const char *filename)
   {
     loadGraphFromFile(filename);
-    print_adj();
+    // print_adj();
   }
 
   std::vector<int> getCoo1();

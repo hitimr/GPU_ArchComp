@@ -2,7 +2,6 @@
 #include "common.hpp"
 #include "misc.hpp"
 #include "kruskal.hpp"
-#include "benchmarker.hpp"
 #include <iostream>
 #include <string>
 
@@ -52,7 +51,7 @@ int main(int ac, char **av)
                                  : DEFAULT_INPUT_FILE);
 
   std::cout << "Loading " << input_file << std::endl;
-  // Graph graph(input_file.c_str());
+  Graph graph(input_file.c_str());
 
 
 
