@@ -37,7 +37,7 @@ def convert_to_edgelist(g: ig.Graph):
     # retrieve edges including weights
     df = g.get_edge_dataframe()
     df = df.rename(columns= {
-        "source" : "u",
+        "source": "u",
         "target": "v"
     })
 
