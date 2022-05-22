@@ -1,15 +1,13 @@
-#include "graph.hpp"
 #include "common.hpp"
-#include "misc.hpp"
+#include "graph.hpp"
 #include "kruskal.hpp"
+#include "misc.hpp"
 #include <iostream>
 #include <string>
 
 // debugging
 #include <chrono>
 #include <thread>
-
-
 
 OptionsT parse_options(int ac, char **av)
 {
@@ -53,8 +51,6 @@ int main(int ac, char **av)
   std::cout << "Loading " << input_file << std::endl;
   Graph graph(input_file.c_str());
 
-
-
   Benchmarker b;
 
   using namespace std::chrono_literals;
@@ -63,12 +59,10 @@ int main(int ac, char **av)
   std::this_thread::sleep_for(100ms);
   b.stop("sleep1");
 
-
   b.start("sleep1");
   std::this_thread::sleep_for(100ms);
   b.stop("sleep1");
   b.stop("sleep2");
-
 
   b.print_timings();
 
