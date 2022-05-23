@@ -1,6 +1,7 @@
 #include "common.hpp"
 #include "graph.hpp"
 #include "kruskal.hpp"
+#include "edgelist.hpp"
 #include "misc.hpp"
 #include <iostream>
 #include <string>
@@ -62,10 +63,10 @@ int main(int ac, char **av)
                                  : DEFAULT_INPUT_FILE);
   std::cout << "Loading " << input_file << std::endl;
 
-  Graph graph(input_file.c_str());
+  EdgeList edgelist(input_file.c_str());
 
 
-  calculate_mst(graph);
+  //calculate_mst(graph);
 
   g_benchmarker.print_timings();
 
