@@ -7,12 +7,12 @@
 
 void calculate_mst(EdgeList &edgelist)
 {
-  g_benchmarker.start("calculate MST");
+  g_benchmarker.start("calculate_mst()");
 
-  g_benchmarker.start("Initialize Union-Find DS");
+  g_benchmarker.start("Initialize Data structures");
   UnionFind P(edgelist.num_edges);
-  EdgeList T(edgelist.num_nodes-1);
-  g_benchmarker.stop("Initialize Union-Find DS");
+  EdgeList T(edgelist.num_nodes-1); // EdgeList is empty but required memory is already allocated
+  g_benchmarker.stop("Initialize Data structures");
 
 
   switch (g_options["mst-kernel"].as<int>())
@@ -25,13 +25,15 @@ void calculate_mst(EdgeList &edgelist)
     throw std::invalid_argument("Unknown MST kernel");
   }
 
-  g_benchmarker.stop("calculate MST");
+  g_benchmarker.stop("calculate_mst()");
 }
 
 // std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val,
 // const size_t num_nodes, bool debug = false){
 void kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
 {
+  g_benchmarker.start("Kruskal()");
+
   // this will sort all three arrays according to the values in the first one
   sort_edgelist(E, g_options["sort-kernel"].as<int>());
 
@@ -44,5 +46,6 @@ void kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
       P.my_union(E.coo1[i], E.coo2[i]);
     }
   }
-  return;
+  
+  g_benchmarker.stop("Kruskal()");
 }
