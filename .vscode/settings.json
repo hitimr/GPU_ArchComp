@@ -76,6 +76,13 @@
         "any": "cpp"
     },
     "cSpell.words": [
-        "edgelist"
+        "cudaDeviceSynchronize",
+        "cudaFree",
+        "cudaMalloc",
+        "cudaMemcpy",
+        "cudaMemcpyDeviceToHost",
+        "edgelist",
+        "kruskal",
+        "stoi"
     ]
 }

@@ -10,9 +10,8 @@ void calculate_mst(EdgeList &edgelist)
 
   g_benchmarker.start("Initialize");
   UnionFind P(edgelist.num_edges);
-  EdgeList T(edgelist.num_nodes-1); // EdgeList is empty but required memory is already allocated
+  EdgeList T(edgelist.num_nodes - 1); // EdgeList is empty but required memory is already allocated
   g_benchmarker.stop("Initialize");
-
 
   switch (g_options["mst-kernel"].as<int>())
   {
@@ -20,9 +19,39 @@ void calculate_mst(EdgeList &edgelist)
     kruskal(edgelist, P, T);
     break;
 
+  case MST_KERNEL_FILTER_KRUSKAL:
+    break;
+
   default:
     throw std::invalid_argument("Unknown MST kernel");
   }
+}
+
+bool kruskal_threshold(EdgeList &E)
+{
+  // TODO: remove magic number
+  // arbitrary for now
+  if(E.num_edges < 20)  
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
+{
+  if(kruskal_threshold(E))
+  {
+    kruskal(E, P, T);
+  }
+  else
+  {
+    
+  }
+  
 }
 
 // std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val,
@@ -43,6 +72,6 @@ void kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
       P.my_union(E.coo1[i], E.coo2[i]);
     }
   }
-  
+
   g_benchmarker.stop("Kruskal()");
 }

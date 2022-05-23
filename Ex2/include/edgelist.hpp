@@ -100,8 +100,11 @@ public:
   }
 
   void append_edge(const Edge &e) { append_edge(e.source, e.target, e.weight); }
+  void append_edge(Edge &&e) { append_edge(e.source, e.target, e.weight); }
 
-  Edge operator[](int index) { return Edge(coo1[index], coo2[index], val[index]); }
+  Edge operator[](int index) const { return Edge(coo1[index], coo2[index], val[index]); }
+
+  size_t size() const { return num_edges; }
 
   // TODO: make private and create getter functions
   size_t num_nodes;

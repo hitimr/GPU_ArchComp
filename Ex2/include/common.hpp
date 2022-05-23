@@ -17,9 +17,15 @@ extern Benchmarker g_benchmarker;
 
 // Kernels
 #define MST_KERNEL_REGULAR_KRUSKAL 0
+#define MST_KERNEL_FILTER_KRUSKAL 1
+
 #define SORT_KERNEL_GPU_BUBBLE_MULT 0
+
+#define PARTITION_KERNEL_CPU_NAIVE 0
 
 
 #define EXIT_SUCCESS 0
 #define BLOCK_SIZE 256
 #define GRID_SIZE 256
+#define BLOCKSIZE BLOCK_SIZE
+#define GRIDSIZE GRID_SIZE

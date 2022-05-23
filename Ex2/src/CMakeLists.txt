@@ -5,6 +5,7 @@ cuda_add_executable(ex2
     kruskal.cu 
     sort.cu
     graph.cu
+    partition.cu
 )
 
 
