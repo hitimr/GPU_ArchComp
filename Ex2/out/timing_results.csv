@@ -1,5 +1,0 @@
-tag;average;std_dev;total;num_calls
-Initialize;2.916e-06;0;2.916e-06;1
-Kruskal();0.0551084;0;0.0551084;1
-calculate_mst();0.0551212;0;0.0551212;1
-sort edgelist;0.0550994;0;0.0550994;1
