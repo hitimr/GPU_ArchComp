@@ -1,11 +1,12 @@
 #pragma once
 #include <chrono>
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <list>
 #include <map>
+#include <stdexcept>
 #include <string>
-
 
 /*
   Benchmarker for tracking multiple timers
@@ -35,7 +36,6 @@
 
 */
 
-
 /*
   Very basic Timer-Class to keep track of time
 */
@@ -60,7 +60,6 @@ public:
 private:
   std::chrono::time_point<std::chrono::high_resolution_clock> chrono_ts;
 };
-
 
 class Benchmarker
 {
@@ -89,6 +88,37 @@ public:
                 << "s\ttotal=" << sum(tag) << std::endl;
     }
   }
+
+  void export_csv(std::string filename)
+  {
+    std::ofstream file;
+    file.open(filename);
+    if (!file.is_open())
+    {
+      throw std::runtime_error("Unable to open File");
+    }
+
+    // Header
+    file << "tag;average;std_dev;total;num_calls" << std::endl;
+
+    // Data
+    for (auto itr = timings.begin(); itr != timings.end(); itr++)
+    {
+      // clang-format off
+      auto tag = itr->first;
+      std::cout << tag << ";" 
+                << average(tag) << ";" 
+                << std_deviation(tag) << ";"
+                << sum(tag) << ";"
+                << num_calls(tag) << ";"
+                << std::endl;
+      // clang-format on
+    }
+
+    file.close();
+  }
+
+  size_t num_calls(std::string tag) { return timings[tag].size(); }
 
   // return the average time of a given tag
   double average(std::string tag) { return sum(tag) / (double)timings[tag].size(); }
