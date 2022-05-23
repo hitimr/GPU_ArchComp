@@ -12,7 +12,7 @@ public:
   {
     parent.resize(size);
     for (size_t i = 0; i < parent.size(); ++i)
-      parent[i] = i;
+      parent[i] = i;  // TODO: maybe make parallel
   }
 
   int find(int i)

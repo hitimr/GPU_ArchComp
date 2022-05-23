@@ -1,7 +1,6 @@
 #include "graph.hpp"
 
-
-// implementations of the next 3 functions are placeholder
+// implementations of the next 4 functions are placeholder
 // TODO: efficient implementation
 std::vector<int> Graph::getWeights()
 {
@@ -17,12 +16,23 @@ std::vector<int> Graph::getCoo1()
   return coo1;
 }
 
-
-std::vector<int> Graph::getCoo2() 
+std::vector<int> Graph::getCoo2()
 {
   std::vector<int> coo1, coo2, w;
   std::tie(coo1, coo2, w) = getCOOReepresentation();
   return coo2;
+}
+
+int Graph::numVertices()
+{
+  std::vector<int> coo1, coo2, w;
+  std::tie(coo1, coo2, w) = getCOOReepresentation();
+  return w.size();
+}
+
+int Graph::numEdges()
+{
+  return size;
 }
 
 

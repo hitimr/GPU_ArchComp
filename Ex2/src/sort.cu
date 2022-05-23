@@ -7,17 +7,22 @@
 #include <tuple>
 #include <vector>
 
-template <typename ARGS> void sort(SortKernel kernel, ARGS &&args)
+void sort_edgelist(int kernel, std::vector<int> &val, std::vector<int> &coo1,
+                   std::vector<int> &coo2)
 {
+  g_benchmarker.start("sort edgelist");
+
   switch (kernel)
   {
-  case bubble:
-    gpu_bubble_sort_mult(std::forward<ARGS>(args));
+  case SORT_KERNEL_GPU_BUBBLE_MULT:
+    gpu_bubble_sort_mult(val, coo1, coo2);
     break;
 
   default:
-    throw std::invalid_argument("Unknown kernel");
+    throw std::invalid_argument("Unknown sort kernel");
   }
+
+  g_benchmarker.stop("sort edgelist");
 }
 
 __device__ void gpu_swap(int *vec, size_t i, size_t j)

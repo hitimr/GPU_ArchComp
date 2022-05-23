@@ -22,6 +22,8 @@ public:
   std::vector<int> getCoo1();
   std::vector<int> getCoo2();
   std::vector<int> getWeights();
+  int numEdges();
+  int numVertices();
 
   std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> getCSRRepresentation();
 
