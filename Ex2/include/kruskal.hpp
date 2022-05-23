@@ -1,7 +1,7 @@
 #pragma once
-#include "graph.hpp"
+#include "edgelist.hpp"
 #include "union_find.hpp"
 #include <vector>
 
-void calculate_mst(Graph &graph);
-std::vector<int> kruskal(Graph &graph, UnionFind &P, std::vector<int> &T);
+void calculate_mst(EdgeList &edgelist);
+void kruskal(EdgeList &edgelist, UnionFind &P, EdgeList &T);

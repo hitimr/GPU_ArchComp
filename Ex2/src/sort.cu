@@ -7,15 +7,14 @@
 #include <tuple>
 #include <vector>
 
-void sort_edgelist(int kernel, std::vector<int> &val, std::vector<int> &coo1,
-                   std::vector<int> &coo2)
+void sort_edgelist(EdgeList & E, int kernel)
 {
   g_benchmarker.start("sort edgelist");
 
   switch (kernel)
   {
   case SORT_KERNEL_GPU_BUBBLE_MULT:
-    gpu_bubble_sort_mult(val, coo1, coo2);
+    gpu_bubble_sort_mult(E.val, E.coo1, E.coo2);
     break;
 
   default:

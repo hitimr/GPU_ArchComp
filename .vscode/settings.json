@@ -74,5 +74,8 @@
         "stop_token": "cpp",
         "valarray": "cpp",
         "any": "cpp"
-    }
+    },
+    "cSpell.words": [
+        "edgelist"
+    ]
 }

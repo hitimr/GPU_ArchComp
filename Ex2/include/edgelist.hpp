@@ -1,16 +1,35 @@
+#pragma once
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
+class Edge
+{
+public:
+  Edge(int source, int target, int weight) : source(source), target(target), weight(weight){};
+
+  int source;
+  int target;
+  int weight;
+};
+
 class EdgeList
 {
 public:
-  EdgeList(std::string file_name)
+  // Construct an edgelist from a given input file
+  // format as specified in TUWEL
+  EdgeList(std::string file_name) { load_from_file(file_name); };
+
+  // Allocate an EdgeList for [size] edges
+  EdgeList(size_t size)
   {
-      load_from_file(file_name);
-  };
+    num_edges = 0;
+    num_nodes = 0;
+    reserve(size);
+  }
 
   void load_from_file(std::string file_name)
   {
@@ -59,6 +78,32 @@ public:
     input_file.close();
   }
 
+  // reserve memory space for [size] nodes
+  // useful for more efficient calls of append_edge()
+  void reserve(size_t size)
+  {
+    assert(size >= coo1.size());
+
+    coo1.reserve(size);
+    coo2.reserve(size);
+    val.reserve(size);
+  }
+
+  // append a new edge to the edgelist
+  void append_edge(int source, int target, int weight)
+  {
+    coo1.push_back(source);
+    coo2.push_back(target);
+    val.push_back(weight);
+    num_edges += 1;
+    // correctly update number of nodes
+  }
+
+  void append_edge(const Edge &e) { append_edge(e.source, e.target, e.weight); }
+
+  Edge operator[](int index) { return Edge(coo1[index], coo2[index], val[index]); }
+
+  // TODO: make private and create getter functions
   size_t num_nodes;
   size_t num_edges;
   int direction;

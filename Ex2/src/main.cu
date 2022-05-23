@@ -1,5 +1,4 @@
 #include "common.hpp"
-#include "graph.hpp"
 #include "kruskal.hpp"
 #include "edgelist.hpp"
 #include "misc.hpp"
@@ -66,7 +65,7 @@ int main(int ac, char **av)
   EdgeList edgelist(input_file.c_str());
 
 
-  //calculate_mst(graph);
+  calculate_mst(edgelist);
 
   g_benchmarker.print_timings();
 
