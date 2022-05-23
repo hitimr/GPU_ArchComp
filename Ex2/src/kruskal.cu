@@ -87,6 +87,7 @@ void kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
   sort_edgelist(E, g_options["sort-kernel"].as<int>());
 
   // grow MST
+  g_benchmarker.start("grow MST");
   for (size_t i = 0; i < E.num_edges; i++)
   {
     if (P.find(E.coo1[i]) != P.find(E.coo2[i]))
@@ -95,6 +96,6 @@ void kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
       P.my_union(E.coo1[i], E.coo2[i]);
     }
   }
-
+  g_benchmarker.stop("grow MST");
   g_benchmarker.stop("Kruskal()");
 }

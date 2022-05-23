@@ -74,11 +74,10 @@ int main(int ac, char **av)
   EdgeList edgelist(input_file.c_str());
 
   // Perform MST Calculation
-  g_benchmarker.start("calculate_mst()");
   EdgeList MST = calculate_mst(edgelist);
-  g_benchmarker.stop("calculate_mst()");
 
   // Print timings to console
+  std::cout << std::endl << "Benchmark results:" << std::endl;
   g_benchmarker.print_timings();
 
   // Export timings if specified

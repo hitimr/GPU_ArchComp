@@ -18,6 +18,17 @@ def load_df(filename):
     return df
 
 
+def run(args="", print_output=True):
+    cmd = str(f"{EXECUTABLE} {args}")
+
+    if(print_output):
+        subprocess.run(cmd.split(sep=" "), check=True,
+                       stderr=subprocess.STDOUT)
+    else:
+        subprocess.run(cmd.split(sep=" "), check=True,
+                       stdout=subprocess.DEVNULL)
+
+
 def run_benchmark(outfile, args="", print_output=True, verbose=True):
     cmd = str(f"{EXECUTABLE} --ouputfile_timings {outfile} {args}")
 

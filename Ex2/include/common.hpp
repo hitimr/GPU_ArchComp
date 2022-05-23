@@ -14,7 +14,7 @@ extern Benchmarker g_benchmarker;
 
 // Options
 // #define DEFAULT_INPUT_FILE "input_data/example.csv"
-#define DEFAULT_INPUT_FILE "input_data/barabasi_2000_5.csv"
+#define DEFAULT_INPUT_FILE "input_data/barabasi_25000_10.csv"
 
 // Kernels
 #define MST_KERNEL_REGULAR_KRUSKAL 0

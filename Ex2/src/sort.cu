@@ -9,7 +9,7 @@
 
 void sort_edgelist(EdgeList & E, int kernel)
 {
-  g_benchmarker.start("sort edgelist");
+  g_benchmarker.start("sort_edgelist()");
 
   switch (kernel)
   {
@@ -21,7 +21,7 @@ void sort_edgelist(EdgeList & E, int kernel)
     throw std::invalid_argument("Unknown sort kernel");
   }
 
-  g_benchmarker.stop("sort edgelist");
+  g_benchmarker.stop("sort_edgelist()");
 }
 
 __device__ void gpu_swap(int *vec, size_t i, size_t j)

@@ -84,7 +84,7 @@ def calculate_mst(g: ig.Graph):
 
 
 if __name__ == "__main__":
-    n_nodes = 50000
+    n_nodes = 25000
     connectivity = 10
 
     base_filename = common.INPUT_DATA_DIR / \
