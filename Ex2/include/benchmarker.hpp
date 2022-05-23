@@ -84,7 +84,7 @@ public:
     for (itr = timings.begin(); itr != timings.end(); itr++)
     {
       auto tag = itr->first;
-      std::cout << tag << "s\tµ=" << average(tag) << "s\tsigma=" << std_deviation(tag)
+      std::cout << tag << "\tµ=" << average(tag) << "s\tsigma=" << std_deviation(tag)
                 << "s\ttotal=" << sum(tag) << std::endl;
     }
   }
@@ -95,7 +95,7 @@ public:
     file.open(filename);
     if (!file.is_open())
     {
-      throw std::runtime_error("Unable to open File");
+      throw std::runtime_error("Unable to open output " + filename);
     }
 
     // Header
@@ -106,12 +106,11 @@ public:
     {
       // clang-format off
       auto tag = itr->first;
-      std::cout << tag << ";" 
-                << average(tag) << ";" 
-                << std_deviation(tag) << ";"
-                << sum(tag) << ";"
-                << num_calls(tag) << ";"
-                << std::endl;
+      file  << tag << ";" 
+            << average(tag) << ";" 
+            << std_deviation(tag) << ";"
+            << sum(tag) << ";"
+            << num_calls(tag) << std::endl;
       // clang-format on
     }
 

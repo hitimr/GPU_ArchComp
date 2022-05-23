@@ -17,10 +17,13 @@ target_include_directories(ex2 PUBLIC
     "../include"
 )
 
+# Create Output Folder
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/out)
 
+# make run
 add_custom_target(
     run
-    COMMAND ex2
+    COMMAND ex2 --sort-kernel 0 --ouputfile_timings out/timing_results.csv
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/..
 )
 

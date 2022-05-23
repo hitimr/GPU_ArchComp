@@ -7,12 +7,11 @@
 
 void calculate_mst(EdgeList &edgelist)
 {
-  g_benchmarker.start("calculate_mst()");
 
-  g_benchmarker.start("Initialize Data structures");
+  g_benchmarker.start("Initialize");
   UnionFind P(edgelist.num_edges);
   EdgeList T(edgelist.num_nodes-1); // EdgeList is empty but required memory is already allocated
-  g_benchmarker.stop("Initialize Data structures");
+  g_benchmarker.stop("Initialize");
 
 
   switch (g_options["mst-kernel"].as<int>())
@@ -24,8 +23,6 @@ void calculate_mst(EdgeList &edgelist)
   default:
     throw std::invalid_argument("Unknown MST kernel");
   }
-
-  g_benchmarker.stop("calculate_mst()");
 }
 
 // std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val,
