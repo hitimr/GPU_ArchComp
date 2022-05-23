@@ -1,6 +1,8 @@
+#include "common.hpp"
 #include "kruskal.hpp"
 #include "sort.hpp"
 #include "union_find.hpp"
+
 #include <cassert>
 #include <vector>
 
@@ -19,7 +21,7 @@ std::vector<int> kruskal(Graph &graph, UnionFind &P, std::vector<int> &T)
   // UnionFind P(num_nodes);
 
   // this will sort all three arrays according to the values in the first one
-  gpu_bubble_sort_mult(val, coo1, coo2);
+  //sort(val, coo1, coo2);
 
 #ifdef DEBUG
   std::vector<int> find;

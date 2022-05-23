@@ -72,6 +72,7 @@
         "future": "cpp",
         "semaphore": "cpp",
         "stop_token": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "any": "cpp"
     }
 }

@@ -1,8 +1,24 @@
-#include <cassert>
 #include <common.hpp>
+#include <sort.hpp>
+
+#include <cassert>
 #include <iostream>
+#include <stdexcept>
 #include <tuple>
 #include <vector>
+
+template <typename ARGS> void sort(SortKernel kernel, ARGS &&args)
+{
+  switch (kernel)
+  {
+  case bubble:
+    gpu_bubble_sort_mult(std::forward<ARGS>(args));
+    break;
+
+  default:
+    throw std::invalid_argument("Unknown kernel");
+  }
+}
 
 __device__ void gpu_swap(int *vec, size_t i, size_t j)
 {
