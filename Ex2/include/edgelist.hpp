@@ -23,11 +23,16 @@ public:
   // format as specified in TUWEL
   EdgeList(std::string file_name) { load_from_file(file_name); };
 
-  // Allocate an EdgeList for [size] edges
-  EdgeList(size_t size)
+  EdgeList()
   {
     num_edges = 0;
     num_nodes = 0;
+  };
+
+  // Allocate an EdgeList for [size] edges
+  EdgeList(size_t size)
+  {
+    EdgeList();
     reserve(size);
   }
 

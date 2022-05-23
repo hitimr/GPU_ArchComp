@@ -1,13 +1,14 @@
 #include "common.hpp"
 #include "kruskal.hpp"
+#include "partition.hpp"
 #include "sort.hpp"
 #include "union_find.hpp"
 #include <cassert>
+#include <stdio.h>
 #include <vector>
 
 void calculate_mst(EdgeList &edgelist)
 {
-
   g_benchmarker.start("Initialize");
   UnionFind P(edgelist.num_edges);
   EdgeList T(edgelist.num_nodes - 1); // EdgeList is empty but required memory is already allocated
@@ -20,6 +21,7 @@ void calculate_mst(EdgeList &edgelist)
     break;
 
   case MST_KERNEL_FILTER_KRUSKAL:
+    filter_kruskal(edgelist, P, T);
     break;
 
   default:
@@ -31,7 +33,7 @@ bool kruskal_threshold(EdgeList &E)
 {
   // TODO: remove magic number
   // arbitrary for now
-  if(E.num_edges < 20)  
+  if (E.num_edges < 20)
   {
     return true;
   }
@@ -41,17 +43,27 @@ bool kruskal_threshold(EdgeList &E)
   }
 }
 
+int pivot(const EdgeList &E)
+{
+  // rand() is sufficient for pivot elements
+  int pos = rand() % E.size();
+  return E.val[pos];
+}
+
 void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
 {
-  if(kruskal_threshold(E))
+  if (kruskal_threshold(E))
   {
     kruskal(E, P, T);
   }
   else
   {
-    
+    EdgeList E_leq; // less or equal than threshold
+    EdgeList E_ge;  // bigger than threshold
+
+    int p = pivot(E);
+    partition(E, E_leq, E_ge, p, 0);
   }
-  
 }
 
 // std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val,

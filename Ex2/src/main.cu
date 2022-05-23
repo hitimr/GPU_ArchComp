@@ -4,6 +4,8 @@
 #include "misc.hpp"
 #include <iostream>
 #include <string>
+#include <stdio.h>
+#include <stdlib.h>
 
 // debugging
 #include <chrono>
@@ -57,6 +59,7 @@ int main(int ac, char **av)
 {
   g_options = parse_options(ac, av);
   g_benchmarker = Benchmarker();
+  srand(0);
 
   // Load input file
   // I havent found a good way for adding defaults tring to boost::options so im doing it by hand
