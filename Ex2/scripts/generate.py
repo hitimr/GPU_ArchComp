@@ -36,7 +36,7 @@ def generate_graph(n_nodes: int, connectivity: int, w_min=0, w_max=100):
 def convert_to_edgelist(g: ig.Graph):
     # retrieve edges including weights
     df = g.get_edge_dataframe()
-    df = df.rename(columns= {
+    df = df.rename(columns={
         "source": "u",
         "target": "v"
     })
@@ -81,3 +81,21 @@ def calculate_mst(g: ig.Graph):
         ig.Graph: Minimum Spanning Tree-Graph 
     """
     return g.spanning_tree(weights=g.get_edge_dataframe()["weight"])
+
+
+if __name__ == "__main__":
+    n_nodes = 50000
+    connectivity = 10
+
+    base_filename = common.INPUT_DATA_DIR / \
+        f"barabasi_{n_nodes}_{connectivity}"
+
+    # generate Connected, weithed graph
+    g = generate_graph(n_nodes=n_nodes, connectivity=3)
+
+    # calculate reference solution using igraph
+    g_mst_gt = calculate_mst(g)
+
+    # save graph and mst to file
+    export_graph(g, f"{base_filename}.csv")
+    export_graph(g_mst_gt, f"{base_filename}_mst_gt.csv")

@@ -24,12 +24,16 @@ OptionsT parse_options(int ac, char **av)
         "produce help message")
 
         ("mst-kernel,m",
-        po::value<int>()->default_value(MST_KERNEL_REGULAR_KRUSKAL),
+        po::value<int>()->default_value(MST_DEFAULT_KERNEL),
         "Kernel used calculating MST. 0 = regular kruskal, 1 = filter-kruskal")
 
         ("sort-kernel,s",
-        po::value<int>()->default_value(SORT_KERNEL_GPU_BUBBLE_MULT),
-        "Kernel used for sorting [int]")
+        po::value<int>()->default_value(SORT_DEFAULT_KERNEL),
+        "Kernel used for sort() [int]")
+
+        ("partition-kernel,p",
+        po::value<int>()->default_value(PARTITION_DEFAULT_KERNEL),
+        "Kernel used for partition() [int]")
 
         ("inputfile,i", 
         po::value<std::vector<std::string>>(), 
@@ -71,7 +75,7 @@ int main(int ac, char **av)
 
   // Perform MST Calculation
   g_benchmarker.start("calculate_mst()");
-  calculate_mst(edgelist);
+  EdgeList MST = calculate_mst(edgelist);
   g_benchmarker.stop("calculate_mst()");
 
   // Print timings to console

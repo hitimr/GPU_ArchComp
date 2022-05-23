@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "-O3 -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall")
 
+set(ROOT_PROJ_DIR ${CMAKE_SOURCE_DIR})
+set(OUT_DIR ${ROOT_PROJ_DIR}/out)
 
 find_package(Boost ${MINIMUM_BOOST_VERSION} REQUIRED COMPONENTS program_options)
 

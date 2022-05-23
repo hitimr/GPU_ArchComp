@@ -13,7 +13,8 @@ extern Benchmarker g_benchmarker;
 #define PROJ_ROOT_FOLDER_NAME "Ex2"
 
 // Options
-#define DEFAULT_INPUT_FILE "input_data/example.csv"
+// #define DEFAULT_INPUT_FILE "input_data/example.csv"
+#define DEFAULT_INPUT_FILE "input_data/barabasi_2000_5.csv"
 
 // Kernels
 #define MST_KERNEL_REGULAR_KRUSKAL 0
@@ -23,7 +24,13 @@ extern Benchmarker g_benchmarker;
 
 #define PARTITION_KERNEL_CPU_NAIVE 0
 
+// Defaults
+#define MST_DEFAULT_KERNEL MST_KERNEL_FILTER_KRUSKAL        // MST
+#define SORT_DEFAULT_KERNEL SORT_KERNEL_GPU_BUBBLE_MULT     // Sort
+#define PARTITION_DEFAULT_KERNEL PARTITION_KERNEL_CPU_NAIVE // Partition
 
+// Misc
+// TODO: change grid/block size to launch parameters
 #define EXIT_SUCCESS 0
 #define BLOCK_SIZE 256
 #define GRID_SIZE 256

@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <vector>
 
-void calculate_mst(EdgeList &edgelist)
+EdgeList calculate_mst(EdgeList &edgelist)
 {
   g_benchmarker.start("Initialize");
   UnionFind P(edgelist.num_edges);
@@ -27,13 +27,14 @@ void calculate_mst(EdgeList &edgelist)
   default:
     throw std::invalid_argument("Unknown MST kernel");
   }
+  return T;
 }
 
 bool kruskal_threshold(EdgeList &E)
 {
   // TODO: remove magic number
   // arbitrary for now
-  if (E.num_edges < 20)
+  if (E.num_edges < 4096)
   {
     return true;
   }
@@ -59,10 +60,20 @@ void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
   else
   {
     EdgeList E_leq; // less or equal than threshold
-    EdgeList E_ge;  // bigger than threshold
+    EdgeList E_big; // bigger than threshold
 
     int p = pivot(E);
-    partition(E, E_leq, E_ge, p, 0);
+    partition(E, E_leq, E_big, p, 0);
+
+    if (E_leq.size() != 0)
+    {
+      filter_kruskal(E_leq, P, T);
+    }
+    // TODO: filter
+    if (E_big.size() != 0)
+    {
+      filter_kruskal(E_big, P, T);
+    }
   }
 }
 

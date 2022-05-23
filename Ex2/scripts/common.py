@@ -22,7 +22,7 @@ def run_benchmark(outfile, args="", print_output=True, verbose=True):
     cmd = str(f"{EXECUTABLE} --ouputfile_timings {outfile} {args}")
 
     if(verbose):
-        print(f"Running benchmark with {args}")
+        print(f"Running benchmark with .{cmd}")
 
     if(print_output):
         subprocess.run(cmd.split(sep=" "), check=True,

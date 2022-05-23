@@ -19,13 +19,13 @@ target_include_directories(ex2 PUBLIC
 )
 
 # Create Output Folder
-file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/out)
+file(MAKE_DIRECTORY ${OUT_DIR})
 
 # make run
 add_custom_target(
     run
-    COMMAND ex2 --sort-kernel 0 --ouputfile_timings out/timing_results.csv
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/..
+    COMMAND ex2 --sort-kernel 0 --ouputfile_timings ${OUT_DIR}/timing_results.csv
+    WORKING_DIRECTORY ${ROOT_PROJ_DIR}
 )
 
 target_include_directories(ex2 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/lodepng")

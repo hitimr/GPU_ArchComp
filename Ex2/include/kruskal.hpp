@@ -4,7 +4,7 @@
 #include <vector>
 
 // general wrapper for MST algorithms
-void calculate_mst(EdgeList &edgelist);
+EdgeList calculate_mst(EdgeList &edgelist);
 
 // regular kruskal algorithm
 void kruskal(EdgeList &edgelist, UnionFind &P, EdgeList &T);

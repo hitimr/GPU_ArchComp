@@ -85,7 +85,7 @@ public:
     {
       auto tag = itr->first;
       std::cout << tag << "\tµ=" << average(tag) << "s\tsigma=" << std_deviation(tag)
-                << "s\ttotal=" << sum(tag) << std::endl;
+                << "s\ttotal=" << sum(tag) << "\tnum_calls=" << num_calls(tag) << std::endl;
     }
   }
 
