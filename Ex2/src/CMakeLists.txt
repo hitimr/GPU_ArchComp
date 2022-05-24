@@ -7,6 +7,7 @@ cuda_add_executable(ex2
     graph.cu
     partition.cu
     filter.cu
+    edgelist.cu
 )
 
 

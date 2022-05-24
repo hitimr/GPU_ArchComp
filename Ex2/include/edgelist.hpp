@@ -36,6 +36,12 @@ public:
     reserve(size);
   }
 
+  // GPU Interface
+  EdgeList *gpu; // Class holds a pointer to a copy of itself located on GPU memory
+  void init_gpu();
+  void sync_hostToDevice();
+  void sync_deviceToHost();
+
   void load_from_file(std::string file_name)
   {
     // read header
@@ -119,4 +125,8 @@ public:
   std::vector<int> coo1;
   std::vector<int> coo2;
   std::vector<int> val;
+
+  int *d_coo1;
+  int *d_coo2;
+  int *d_val;
 };
