@@ -9,7 +9,7 @@
 class Edge
 {
 public:
-  Edge(int source, int target, int weight) : source(source), target(target), weight(weight){};
+  __hostdev__ Edge(int source, int target, int weight) : source(source), target(target), weight(weight){};
 
   int source;
   int target;
@@ -114,8 +114,9 @@ public:
   void append_edge(Edge &&e) { append_edge(e.source, e.target, e.weight); }
 
   Edge operator[](int index) const { return Edge(coo1[index], coo2[index], val[index]); }
+  __device__ Edge at(int index) const { return Edge(d_coo1[index], d_coo2[index], d_val[index]); }
 
-  size_t size() const { return num_edges; }
+  __hostdev__ size_t size() const { return num_edges; }
 
   // TODO: make private and create getter functions
   size_t num_nodes;

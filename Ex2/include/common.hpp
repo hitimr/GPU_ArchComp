@@ -39,3 +39,11 @@ extern Benchmarker g_benchmarker;
 #define GRID_SIZE 256
 #define BLOCKSIZE BLOCK_SIZE
 #define GRIDSIZE GRID_SIZE
+
+
+#ifdef __CUDACC__
+// Only define __hostdev__ when using NVIDIA CUDA compiler
+#define __hostdev__ __host__ __device__
+#else
+#define __hostdev__
+#endif

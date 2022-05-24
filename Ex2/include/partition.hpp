@@ -2,7 +2,7 @@
 #include "edgelist.hpp"
 #include <vector>
 
-void partition(const EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold, int kernel);
+void partition(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold, int kernel);
 
 void partition_cpu_naive(const EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold);
 
