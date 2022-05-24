@@ -3,9 +3,9 @@
 #include "kruskal.hpp"
 #include "misc.hpp"
 #include <iostream>
-#include <string>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 
 // debugging
 #include <chrono>
@@ -34,6 +34,10 @@ OptionsT parse_options(int ac, char **av)
         ("partition-kernel,p",
         po::value<int>()->default_value(PARTITION_DEFAULT_KERNEL),
         "Kernel used for partition() [int]")
+
+        ("filter-kernel,f",
+        po::value<int>()->default_value(DEFAULT_FILTER_KERNEL),
+        "Kernel used for filter() [int]")
 
         ("inputfile,i", 
         po::value<std::vector<std::string>>(), 

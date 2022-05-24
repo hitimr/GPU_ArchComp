@@ -3,12 +3,14 @@
 #include "partition.hpp"
 #include "sort.hpp"
 #include "union_find.hpp"
+#include "filter.hpp"
 #include <cassert>
 #include <stdio.h>
 #include <vector>
 
 EdgeList calculate_mst(EdgeList &edgelist)
 {
+  g_benchmarker.start("total");
   g_benchmarker.start("Initialize");
   UnionFind P(edgelist.num_edges);
   EdgeList T(edgelist.num_nodes - 1); // EdgeList is empty but required memory is already allocated
@@ -27,6 +29,8 @@ EdgeList calculate_mst(EdgeList &edgelist)
   default:
     throw std::invalid_argument("Unknown MST kernel");
   }
+
+  g_benchmarker.stop("total");
   return T;
 }
 
@@ -63,13 +67,15 @@ void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
     EdgeList E_big; // bigger than threshold
 
     int p = pivot(E);
-    partition(E, E_leq, E_big, p, 0);
+    partition(E, E_leq, E_big, p, g_options["partition-kernel"].as<int>());
 
     if (E_leq.size() != 0)
     {
       filter_kruskal(E_leq, P, T);
     }
-    // TODO: filter
+    
+    filter(E_big, P, g_options["filter-kernel"].as<int>());
+
     if (E_big.size() != 0)
     {
       filter_kruskal(E_big, P, T);

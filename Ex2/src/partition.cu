@@ -9,7 +9,7 @@
 
 void partition(const EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold, int kernel)
 {
-  g_benchmarker.start("partition");
+  g_benchmarker.start("partition()");
 
   switch (kernel)
   {
@@ -21,7 +21,7 @@ void partition(const EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold
     throw std::invalid_argument("Unknown partition kernel");
   }
 
-  g_benchmarker.stop("partition");
+  g_benchmarker.stop("partition()");
 }
 
 void partition_cpu_naive(const EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold)

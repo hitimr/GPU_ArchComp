@@ -24,10 +24,13 @@ extern Benchmarker g_benchmarker;
 
 #define PARTITION_KERNEL_CPU_NAIVE 0
 
+#define FILTER_KERNEL_CPU_NAIVE 0
+
 // Defaults
 #define MST_DEFAULT_KERNEL MST_KERNEL_FILTER_KRUSKAL        // MST
 #define SORT_DEFAULT_KERNEL SORT_KERNEL_GPU_BUBBLE_MULT     // Sort
 #define PARTITION_DEFAULT_KERNEL PARTITION_KERNEL_CPU_NAIVE // Partition
+#define DEFAULT_FILTER_KERNEL FILTER_KERNEL_CPU_NAIVE       // Filter
 
 // Misc
 // TODO: change grid/block size to launch parameters
