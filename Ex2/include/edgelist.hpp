@@ -91,14 +91,7 @@ public:
 
   // reserve memory space for [size] nodes
   // useful for more efficient calls of append_edge()
-  void reserve(size_t size)
-  {
-    assert(size >= coo1.size());
-
-    coo1.reserve(size);
-    coo2.reserve(size);
-    val.reserve(size);
-  }
+  void reserve(size_t size);
 
   // append a new edge to the edgelist
   void append_edge(int source, int target, int weight)

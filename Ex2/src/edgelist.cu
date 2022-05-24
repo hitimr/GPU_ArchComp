@@ -39,3 +39,18 @@ void EdgeList::sync_deviceToHost()
   bytes = sizeof(int) * val.size();
   cudaMemcpy(val.data(), d_val, bytes, cudaMemcpyDeviceToHost);
 }
+
+void EdgeList::reserve(size_t size)
+{
+  assert(size >= coo1.size());
+
+  coo1.reserve(size);
+  coo2.reserve(size);
+  val.reserve(size);
+
+  size_t bytes = size * sizeof(int);
+  cudaMalloc(&d_coo1, bytes);
+  cudaMalloc(&d_coo2, bytes);
+  cudaMalloc(&d_val, bytes);
+}
+

@@ -18,6 +18,10 @@ void partition(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold, int 
     partition_cpu_naive(E, E_leq, E_ge, threshold);
     break;
 
+  case PARTITION_KERNEL_GPU:
+    //partition_inclusive_scan();
+    break;
+
   default:
     throw std::invalid_argument("Unknown partition kernel");
   }
@@ -179,8 +183,10 @@ void exclusive_scan(int const *input, int *output, int N)
   cudaFree(carries);
 }
 
+// void partition_inclusive_scan(E, E_leq, E_big, threshold)
 std::vector<std::vector<int>> partition_inclusive_scan(std::vector<int> &vec, int threshold)
 {
+  //E.sync_hostToDervice();
   size_t size = vec.size();
   int num_bytes = vec.size() * sizeof(int);
 
@@ -195,12 +201,14 @@ std::vector<std::vector<int>> partition_inclusive_scan(std::vector<int> &vec, in
   cudaMemcpy(d_vec, vec.data(), num_bytes, cudaMemcpyHostToDevice);
 
   check_array<<<GRIDSIZE, BLOCKSIZE>>>(d_vec, d_v2, d_v3, size, threshold);
+  //checkarray(E.gpu)
 
   exclusive_scan(d_v2, d_v4, size);
   exclusive_scan(d_v3, d_v5, size);
 
   int sum_smaller[1];
   int sum_greater[1];
+
   cudaMemcpy(sum_smaller, d_v4 + size - 1, sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(sum_greater, d_v5 + size - 1, sizeof(int), cudaMemcpyDeviceToHost);
 
@@ -209,6 +217,14 @@ std::vector<std::vector<int>> partition_inclusive_scan(std::vector<int> &vec, in
 
   std::vector<int> partitioned_array_smaller(sum_smaller[0]);
   std::vector<int> partitioned_array_greater(sum_greater[0]);
+
+  // E_leq.sync_deviceToHost();
+  // E_leq.reserve(sum_smaller);
+  // E_big.sync_deviceToHost();
+  // E_big.reserve(sum_greater);
+
+
+
 
   create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(d_vec, d_v2, d_v4, d_v6, size);
   create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(d_vec, d_v3, d_v5, d_v7, size);
