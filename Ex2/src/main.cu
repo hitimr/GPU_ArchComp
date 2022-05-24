@@ -125,7 +125,7 @@ int main(int ac, char **av)
   gpu_interface_demo(edgelist);
 
 
-  /*
+  
   // Perform MST Calculation
   EdgeList MST = calculate_mst(edgelist);
 
@@ -139,7 +139,7 @@ int main(int ac, char **av)
     g_benchmarker.export_csv(g_options["ouputfile_timings"].as<std::vector<std::string>>()[0]);
   }
 
-  */
+  
 
   return 0;
 }

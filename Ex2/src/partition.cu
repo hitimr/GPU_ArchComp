@@ -63,16 +63,21 @@ __global__ void check_array(int *vec, int *smaller, int *greater, size_t size, i
   }
 }
 
-__global__ void create_partitioned_array(int *values, int *truth_values, int *scanned_values,
-                                         int *new_array, size_t size)
+__global__ void create_partitioned_array(int *values, int *start, int *target, 
+                                         int *truth_values, int *scanned_values,
+                                         int *new_array_values, int *new_array_start, int *new_array_target,
+                                         size_t size)
 {
   int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
 
   for (size_t i = thread_id; i < size; i += num_threads)
   {
-    if (truth_values[i])
-      new_array[scanned_values[i] - 1] = values[i];
+    if (truth_values[i]){
+      new_array_values[scanned_values[i] - 1] = values[i];
+      new_array_start[scanned_values[i] - 1] = start[i];
+      new_array_target[scanned_values[i] - 1] = target[i];
+    }
   }
 }
 
@@ -184,50 +189,48 @@ void exclusive_scan(int const *input, int *output, int N)
 }
 
 // void partition_inclusive_scan(E, E_leq, E_big, threshold)
-std::vector<std::vector<int>> partition_inclusive_scan(std::vector<int> &vec, int threshold)
+void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold)
 {
-  //E.sync_hostToDervice();
-  size_t size = vec.size();
-  int num_bytes = vec.size() * sizeof(int);
+  size_t size = E.val.size();
+  int num_bytes = E.val.size() * sizeof(int);
 
   // allocate
-  int *d_vec, *d_v2, *d_v3, *d_v4, *d_v5, *d_v6, *d_v7;
-  cudaMalloc((void **)&d_vec, num_bytes);
-  cudaMalloc((void **)&d_v2, num_bytes);
-  cudaMalloc((void **)&d_v3, num_bytes);
-  cudaMalloc((void **)&d_v4, num_bytes);
-  cudaMalloc((void **)&d_v5, num_bytes);
+  int *d_E_val, *d_E_coo1, *d_E_coo2, *d_truth_small, *d_truth_big, *d_scanned_truth_small, *d_scanned_truth_big;
+  cudaMalloc((void **)&d_E_val, num_bytes);
+  cudaMalloc((void **)&d_E_coo1, num_bytes);
+  cudaMalloc((void **)&d_E_coo2, num_bytes);
+  cudaMalloc((void **)&d_truth_small, num_bytes);
+  cudaMalloc((void **)&d_truth_big, num_bytes);
+  cudaMalloc((void **)&d_scanned_truth_small, num_bytes);
+  cudaMalloc((void **)&d_scanned_truth_big, num_bytes);
 
-  cudaMemcpy(d_vec, vec.data(), num_bytes, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_E_val, E.val.data(), num_bytes, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_E_coo1, E.coo1.data(), num_bytes, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_E_coo1, E.coo2.data(), num_bytes, cudaMemcpyHostToDevice);
 
-  check_array<<<GRIDSIZE, BLOCKSIZE>>>(d_vec, d_v2, d_v3, size, threshold);
-  //checkarray(E.gpu)
+  check_array<<<GRIDSIZE, BLOCKSIZE>>>(d_vec, d_truth_small, d_truth_big, size, threshold);
 
-  exclusive_scan(d_v2, d_v4, size);
-  exclusive_scan(d_v3, d_v5, size);
+  exclusive_scan(d_truth_small, d_scanned_truth_small, size);
+  exclusive_scan(d_truth_big, d_scanned_truth_big, size);
 
   int sum_smaller[1];
   int sum_greater[1];
 
-  cudaMemcpy(sum_smaller, d_v4 + size - 1, sizeof(int), cudaMemcpyDeviceToHost);
-  cudaMemcpy(sum_greater, d_v5 + size - 1, sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(sum_smaller, d_scanned_truth_small + size - 1, sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(sum_greater, d_scanned_truth_big + size - 1, sizeof(int), cudaMemcpyDeviceToHost);
 
-  cudaMalloc((void **)&d_v6, sizeof(int) * sum_smaller[0]);
-  cudaMalloc((void **)&d_v7, sizeof(int) * sum_greater[0]);
+  int *d_E_leq_val, *d_E_leq_coo1, *d_E_leq_coo2, *d_E_ge_val, *d_E_ge_coo1, *d_E_ge_coo2;
+  cudaMalloc((void **)&d_E_leq_val, sizeof(int) * sum_smaller[0]);
+  cudaMalloc((void **)&d_E_leq_coo1, sizeof(int) * sum_smaller[0]);
+  cudaMalloc((void **)&d_E_leq_coo2, sizeof(int) * sum_smaller[0]);
+  cudaMalloc((void **)&d_E_ge_val, sizeof(int) * sum_greater[0]);
+  cudaMalloc((void **)&d_E_ge_coo1, sizeof(int) * sum_greater[0]);
+  cudaMalloc((void **)&d_E_ge_coo2, sizeof(int) * sum_greater[0]);
+  
+  // reserve some space here for leq and ge vectors
 
-  std::vector<int> partitioned_array_smaller(sum_smaller[0]);
-  std::vector<int> partitioned_array_greater(sum_greater[0]);
-
-  // E_leq.sync_deviceToHost();
-  // E_leq.reserve(sum_smaller);
-  // E_big.sync_deviceToHost();
-  // E_big.reserve(sum_greater);
-
-
-
-
-  create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(d_vec, d_v2, d_v4, d_v6, size);
-  create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(d_vec, d_v3, d_v5, d_v7, size);
+  create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(d_E_val, d_E_coo1, d_E_coo2, d_truth_small, d_scanned_truth_small, d_E_leq_val, d_E_leq_coo1, d_E_leq_coo2, size);
+  create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(d_E_val, d_E_coo1, d_E_coo2, d_truth_big, d_scanned_truth_big, d_E_ge_val, d_E_ge_coo1, d_E_ge_coo2, size);
 
   cudaMemcpy(partitioned_array_smaller.data(), d_v6, sizeof(int) * sum_smaller[0],
              cudaMemcpyDeviceToHost);
