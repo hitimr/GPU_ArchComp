@@ -19,7 +19,7 @@ void partition(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold, int 
     break;
 
   case PARTITION_KERNEL_GPU:
-    //partition_inclusive_scan();
+    partition_inclusive_scan(E, E_leq, E_ge, threshold);
     break;
 
   default:
@@ -208,7 +208,7 @@ void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int 
   cudaMemcpy(d_E_coo1, E.coo1.data(), num_bytes, cudaMemcpyHostToDevice);
   cudaMemcpy(d_E_coo1, E.coo2.data(), num_bytes, cudaMemcpyHostToDevice);
 
-  check_array<<<GRIDSIZE, BLOCKSIZE>>>(d_vec, d_truth_small, d_truth_big, size, threshold);
+  check_array<<<GRIDSIZE, BLOCKSIZE>>>(d_E_val, d_truth_small, d_truth_big, size, threshold);
 
   exclusive_scan(d_truth_small, d_scanned_truth_small, size);
   exclusive_scan(d_truth_big, d_scanned_truth_big, size);
@@ -232,22 +232,22 @@ void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int 
   create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(d_E_val, d_E_coo1, d_E_coo2, d_truth_small, d_scanned_truth_small, d_E_leq_val, d_E_leq_coo1, d_E_leq_coo2, size);
   create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(d_E_val, d_E_coo1, d_E_coo2, d_truth_big, d_scanned_truth_big, d_E_ge_val, d_E_ge_coo1, d_E_ge_coo2, size);
 
-  cudaMemcpy(partitioned_array_smaller.data(), d_v6, sizeof(int) * sum_smaller[0],
-             cudaMemcpyDeviceToHost);
-  cudaMemcpy(partitioned_array_greater.data(), d_v7, sizeof(int) * sum_greater[0],
-             cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_leq.val.data(), d_E_leq_val, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_leq.coo1.data(), d_E_leq_coo1, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_leq.coo2.data(), d_E_leq_coo2, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
+             
+  cudaMemcpy(E_ge.val.data(), d_E_ge_val, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_ge.coo1.data(), d_E_ge_coo1, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_ge.coo2.data(), d_E_ge_coo2, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
 
-  std::vector<std::vector<int>> result(2);
-  result[0] = partitioned_array_smaller;
-  result[1] = partitioned_array_greater;
+  cudaFree(d_E_val);
+  cudaFree(d_E_coo1);
+  cudaFree(d_E_coo2);
+  cudaFree(d_E_leq_val);
+  cudaFree(d_E_leq_coo1);
+  cudaFree(d_E_leq_coo2);
+  cudaFree(d_E_ge_val);
+  cudaFree(d_E_ge_coo1);
+  cudaFree(d_E_ge_coo2);
 
-  cudaFree(d_vec);
-  cudaFree(d_v2);
-  cudaFree(d_v3);
-  cudaFree(d_v4);
-  cudaFree(d_v5);
-  cudaFree(d_v6);
-  cudaFree(d_v7);
-
-  return result;
 }
