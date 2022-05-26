@@ -228,6 +228,8 @@ void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int 
   cudaMalloc((void **)&d_E_ge_coo2, sizeof(int) * sum_greater[0]);
   
   // reserve some space here for leq and ge vectors
+  E_leq.resize_and_set_num_edges(sum_smaller[0]);
+  E_ge.resize_and_set_num_edges(sum_greater[0]);
 
   create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(d_E_val, d_E_coo1, d_E_coo2, d_truth_small, d_scanned_truth_small, d_E_leq_val, d_E_leq_coo1, d_E_leq_coo2, size);
   create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(d_E_val, d_E_coo1, d_E_coo2, d_truth_big, d_scanned_truth_big, d_E_ge_val, d_E_ge_coo1, d_E_ge_coo2, size);
@@ -236,9 +238,9 @@ void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int 
   cudaMemcpy(E_leq.coo1.data(), d_E_leq_coo1, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
   cudaMemcpy(E_leq.coo2.data(), d_E_leq_coo2, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
              
-  cudaMemcpy(E_ge.val.data(), d_E_ge_val, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(E_ge.coo1.data(), d_E_ge_coo1, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(E_ge.coo2.data(), d_E_ge_coo2, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_ge.val.data(), d_E_ge_val, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_ge.coo1.data(), d_E_ge_coo1, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_ge.coo2.data(), d_E_ge_coo2, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost);
 
   cudaFree(d_E_val);
   cudaFree(d_E_coo1);

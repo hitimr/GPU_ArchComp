@@ -103,6 +103,14 @@ public:
     // correctly update number of nodes
   }
 
+  void resize_and_set_num_edges(size_t size)
+  {
+    coo1.resize(size);
+    coo2.resize(size);
+    val.resize(size);
+    num_edges = size;
+  }
+
   void append_edge(const Edge &e) { append_edge(e.source, e.target, e.weight); }
   void append_edge(Edge &&e) { append_edge(e.source, e.target, e.weight); }
 
