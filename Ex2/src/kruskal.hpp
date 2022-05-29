@@ -187,17 +187,20 @@ void add_node_to_group(const size_t b, const size_t a, std::vector<int> &groups)
 
     if (groups[b] == -1) {
         groups[b] = groups[a];
-        return;
-    }
 
-    for(size_t i = 0; i < groups.size(); ++i){
-        if (groups[i] == groups[b])
-            groups[i] = groups[a];
+    }
+    else {
+        for(size_t i = 0; i < groups.size(); ++i){
+            if (groups[i] == groups[b])
+                groups[i] = groups[a];
+        }
     }
 }
 
 
+// IMPORTANT: this function seems to yield wong results
 std::vector<size_t> kruskal_old(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val, const int num_nodes, bool debug = false){
+    // IMPORTANT: this function seems to yield wong results
     assert((coo1.size() == coo2.size()) && (coo1.size() == val.size()));
 
     gpu_bubble_sort_mult(val,coo1,coo2);

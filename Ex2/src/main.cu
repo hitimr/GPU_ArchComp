@@ -10,7 +10,7 @@
 int main()
 {
     std::cout << "Hello, World" << std::endl;
-    Graph input("10_0.2_1_100.csv");
+    Graph input("20_0.2_1_100.csv");
     input.getCOOReepresentation();
     input.getCSRRepresentation();
     input.getELLRepresentation();
@@ -63,6 +63,7 @@ int main()
     std::cout << "printing mst as edges..." << std::endl;
     print_MST(coo1, coo2, val, mst2);
     std::cout << "total weight: " <<  total_weight(val,mst2) << std::endl;
+    std::cout << "count nodes of the MST: " <<  count_nodes_MST(coo1, coo2, mst2, num_nodes) << std::endl;
 
     return 0;
 }
