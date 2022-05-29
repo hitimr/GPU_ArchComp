@@ -12,7 +12,8 @@ EdgeList calculate_mst(EdgeList &edgelist)
 {
   g_benchmarker.start("total");
   g_benchmarker.start("Initialize");
-  UnionFind P(edgelist.num_edges);
+  //UnionFind P(edgelist.num_edges);
+  UnionFindPC P(edgelist.num_edges); // use a UnionFind that uses Path Compression
   EdgeList T(edgelist.num_nodes - 1); // EdgeList is empty but required memory is already allocated
   g_benchmarker.stop("Initialize");
 

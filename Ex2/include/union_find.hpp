@@ -4,7 +4,7 @@
 
 class UnionFind
 {
-private:
+protected:
   std::vector<int> parent;
 
 public:
@@ -12,7 +12,7 @@ public:
   {
     parent.resize(size);
     for (size_t i = 0; i < parent.size(); ++i)
-      parent[i] = i;  // TODO: maybe make parallel
+      parent[i] = i; 
   }
 
   int find(int i)
@@ -33,5 +33,25 @@ public:
   {
     if (find(i) != find(j))
       link(find(i), find(j));
+  }
+};
+
+
+// UnionFind with Path Compression
+class UnionFindPC : public UnionFind
+{
+public:
+
+  UnionFindPC(size_t size) : UnionFind(size){}
+
+  int find(int i)
+  {
+    if (parent[i] == i)
+      return i;
+    else {
+      int root = find(parent[i]);
+      parent[i] = root;
+      return root;
+    }
   }
 };
