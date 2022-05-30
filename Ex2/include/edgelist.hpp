@@ -111,6 +111,16 @@ public:
     num_edges = size;
   }
 
+  int weigth()
+  {
+    int sum = 0;
+    for(int v : val)
+    {
+      sum +=v;
+    }
+    return sum;
+  }
+
   void append_edge(const Edge &e) { append_edge(e.source, e.target, e.weight); }
   void append_edge(Edge &&e) { append_edge(e.source, e.target, e.weight); }
 

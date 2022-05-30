@@ -123,8 +123,6 @@ int main(int ac, char **av)
   EdgeList edgelist(input_file.c_str());
 
   // gpu_interface_demo(edgelist);
-
-
   
   // Perform MST Calculation
   EdgeList MST = calculate_mst(edgelist);
@@ -132,6 +130,8 @@ int main(int ac, char **av)
   // Print timings to console
   std::cout << std::endl << "Benchmark results:" << std::endl;
   g_benchmarker.print_timings();
+
+  int sum = MST.weigth();
 
   // Export timings if specified
   if (g_options.count("ouputfile_timings"))
