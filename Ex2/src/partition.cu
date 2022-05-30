@@ -185,6 +185,8 @@ void exclusive_scan(int const *input, int *output, int N)
   // Second step: Offset each thread group accordingly
   scan_kernel_2<<<GRIDSIZE, BLOCKSIZE>>>(output, N, carries);
 
+  cudaDeviceSynchronize();
+
   cudaFree(carries);
 }
 
