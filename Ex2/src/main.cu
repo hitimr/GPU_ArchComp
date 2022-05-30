@@ -122,7 +122,7 @@ int main(int ac, char **av)
   std::cout << "Loading " << input_file << std::endl;
   EdgeList edgelist(input_file.c_str());
 
-  gpu_interface_demo(edgelist);
+  // gpu_interface_demo(edgelist);
 
 
   

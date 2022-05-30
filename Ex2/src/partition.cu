@@ -206,7 +206,7 @@ void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int 
 
   cudaMemcpy(d_E_val, E.val.data(), num_bytes, cudaMemcpyHostToDevice);
   cudaMemcpy(d_E_coo1, E.coo1.data(), num_bytes, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_E_coo1, E.coo2.data(), num_bytes, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_E_coo2, E.coo2.data(), num_bytes, cudaMemcpyHostToDevice);
 
   check_array<<<GRIDSIZE, BLOCKSIZE>>>(d_E_val, d_truth_small, d_truth_big, size, threshold);
 
