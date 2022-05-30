@@ -34,6 +34,10 @@ public:
     if (find(i) != find(j))
       link(find(i), find(j));
   }
+
+  int get_parent(int i){
+    return parent[i];
+  }
 };
 
 
@@ -55,3 +59,4 @@ public:
     }
   }
 };
+

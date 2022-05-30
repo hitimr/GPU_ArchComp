@@ -1,6 +1,7 @@
 #include "common.hpp"
 #include "edgelist.hpp"
 #include "kruskal.hpp"
+#include "union_find.hpp"
 #include "misc.hpp"
 #include <iostream>
 #include <stdio.h>
@@ -63,8 +64,11 @@ OptionsT parse_options(int ac, char **av)
   return vm;
 }
 
+/*
 int main(int ac, char **av)
 {
+
+  
   g_options = parse_options(ac, av);
   g_benchmarker = Benchmarker();
   srand(0);
@@ -88,6 +92,38 @@ int main(int ac, char **av)
   if (g_options.count("ouputfile_timings"))
   {
     g_benchmarker.export_csv(g_options["ouputfile_timings"].as<std::vector<std::string>>()[0]);
+  }
+  
+  return 0;
+}
+*/
+
+
+// this alternative main tests the UnionFindPC class
+int main(){
+
+  int size = 9;
+  //UnionFind P(size);
+  UnionFindPC P(size);
+
+  for(int i = 0; i < 4; ++i){
+    P.link(i, i+1);
+  }
+
+  for(int i = 5; i < size - 1; ++i){
+    P.link(i, i+1);
+  }
+
+  for(int i = 0; i < size; ++i){
+    std::cout << "i: " << i << ", parent: " << P.get_parent(i) << std::endl;
+  }
+
+  std::cout << "now call find ..." << std::endl;
+  std::cout << "find(0): " << P.find(0) << std::endl;
+  std::cout << "find(5): " << P.find(5) << std::endl;
+
+  for(int i = 0; i < size; ++i){
+    std::cout << "i: " << i << ", parent: " << P.get_parent(i) << std::endl;
   }
 
   return 0;
