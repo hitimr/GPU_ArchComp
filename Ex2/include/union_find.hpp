@@ -3,11 +3,13 @@
 #include <cassert>
 
 class UnionFind
-{
+{  
 private:
-  std::vector<int> parent;
 
 public:
+
+  std::vector<int> parent;
+  
   UnionFind(size_t size)
   {
     parent.resize(size);
