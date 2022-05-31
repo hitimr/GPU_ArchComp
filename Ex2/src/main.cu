@@ -39,6 +39,11 @@ OptionsT parse_options(int ac, char **av)
         po::value<int>()->default_value(DEFAULT_FILTER_KERNEL),
         "Kernel used for filter() [int]")
 
+        ("compress-kernel,c",
+        po::value<int>()->default_value(DEFAULT_COMPRESS_KERNEL),
+        "Kernel used for compress() [int]")
+
+
         ("inputfile,i", 
         po::value<std::vector<std::string>>(), 
         "input file containing graph data. Filepath must be relative to Ex2/")

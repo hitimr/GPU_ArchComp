@@ -34,4 +34,6 @@ public:
     if (find(i) != find(j))
       link(find(i), find(j));
   }
+
+  void compress(int kernel);
 };

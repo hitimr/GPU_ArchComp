@@ -8,6 +8,7 @@ cuda_add_executable(ex2
     partition.cu
     filter.cu
     edgelist.cu
+    union_find.cu
 )
 
 
