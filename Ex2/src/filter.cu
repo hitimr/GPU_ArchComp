@@ -12,6 +12,11 @@ void filter(EdgeList &E, UnionFind &P, int kernel)
     filter_cpu_naive(E, P);
     break;
 
+  case FILTER_KERNEL_GPU:
+    //filter_gpu_naive(E, P);
+    break;
+
+
   default:
     throw std::invalid_argument("Unknown filter kernel");
   }

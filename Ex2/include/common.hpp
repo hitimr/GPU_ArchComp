@@ -26,6 +26,7 @@ extern Benchmarker g_benchmarker;
 #define PARTITION_KERNEL_GPU 1
 
 #define FILTER_KERNEL_CPU_NAIVE 0
+#define FILTER_KERNEL_GPU 1
 
 #define COMPRESS_KERNEL_CPU_NAIVE 0
 #define COMPRESS_KERNEL_GPU 1
