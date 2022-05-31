@@ -61,7 +61,7 @@ void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
   {
     kruskal(E, P, T);
     P.compress(g_options["compress-kernel"].as<int>());
-}
+  }
   else
   {
     EdgeList E_leq; // less or equal than threshold
