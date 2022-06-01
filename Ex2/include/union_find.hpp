@@ -4,7 +4,7 @@
 
 class UnionFind
 {
-private:
+public:
   std::vector<int> parent;
 
 public:
@@ -35,5 +35,30 @@ public:
       link(find(i), find(j));
   }
 
+  int get_parent(int i){
+    return parent[i];
+  }
+
   void compress(int kernel);
+};
+
+
+
+// UnionFind with Path Compression according to the slides of Mario
+class UnionFindPC : public UnionFind
+{
+public:
+
+  UnionFindPC(size_t size) : UnionFind(size){}
+
+  int find(int i)
+  {
+    if (parent[i] == i)
+      return i;
+    else {
+      int root = find(parent[i]);
+      parent[i] = root;
+      return root;
+    }
+  }
 };
