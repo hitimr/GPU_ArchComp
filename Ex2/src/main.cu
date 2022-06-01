@@ -76,6 +76,7 @@ int main(int ac, char **av)
   srand(0);
 
   EdgeList edgelist(misc::get_input_file());
+  EdgeList MST_reference(misc::get_gt_file());
 
   // Perform MST Calculation
   EdgeList MST = calculate_mst(edgelist);
@@ -84,7 +85,9 @@ int main(int ac, char **av)
   std::cout << std::endl << "Benchmark results:" << std::endl;
   g_benchmarker.print_timings();
 
-  int sum = MST.weigth();
+  // Check Solution
+  // TODO: perform full check. i.e. verify all data not just the sum of weigths
+  assert(MST.weigth() == MST_reference.weigth());
 
   // Export timings if specified
   if (g_options.count("ouputfile_timings"))

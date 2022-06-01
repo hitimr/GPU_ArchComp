@@ -40,7 +40,6 @@ static std::string get_proj_root_dir()
   return path;
 }
 
-
 std::string get_input_file()
 {
   // Load input file
@@ -48,8 +47,17 @@ std::string get_input_file()
   std::string input_file = misc::get_proj_root_dir().append(
       g_options.count("inputfile") ? g_options["inputfile"].as<std::vector<std::string>>()[0]
                                    : DEFAULT_INPUT_FILE);
-  std::cout << "Loading " << input_file << std::endl;
 
   return input_file;
 }
+
+std::string get_gt_file()
+{
+  std::string file_name = get_input_file();
+  size_t len = file_name.size();
+  std::string gt_file = file_name.insert(len - 4, "_mst_gt");
+
+  return gt_file;
+}
+
 } // namespace misc
