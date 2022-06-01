@@ -77,6 +77,7 @@ int main(int ac, char **av)
 
   EdgeList edgelist(misc::get_input_file());
   EdgeList MST_reference(misc::get_gt_file());
+  std::cout << edgelist.size() << " Edges loaded" << std::endl;
 
   // Perform MST Calculation
   EdgeList MST = calculate_mst(edgelist);

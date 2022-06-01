@@ -13,8 +13,8 @@ extern Benchmarker g_benchmarker;
 #define PROJ_ROOT_FOLDER_NAME "Ex2"
 
 // Options
-#define DEFAULT_INPUT_FILE "input_data/example.csv"
-// #define DEFAULT_INPUT_FILE "input_data/barabasi_25000_10.csv"
+//#define DEFAULT_INPUT_FILE "input_data/example.csv"
+#define DEFAULT_INPUT_FILE "input_data/barabasi_500000_1000.csv"
 
 // Kernels
 #define MST_KERNEL_REGULAR_KRUSKAL 0

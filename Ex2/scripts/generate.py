@@ -84,8 +84,8 @@ def calculate_mst(g: ig.Graph):
 
 
 if __name__ == "__main__":
-    n_nodes = 25000
-    connectivity = 10
+    n_nodes = 500000
+    connectivity = 1000
 
     base_filename = common.INPUT_DATA_DIR / \
         f"barabasi_{n_nodes}_{connectivity}"

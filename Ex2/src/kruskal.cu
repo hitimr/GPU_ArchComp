@@ -38,7 +38,7 @@ bool kruskal_threshold(EdgeList &E)
 {
   // TODO: remove magic number
   // arbitrary for now
-  if (E.num_edges < 4096)
+  if (E.num_edges < 4096*4)
   {
     return true;
   }

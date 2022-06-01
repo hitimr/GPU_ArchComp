@@ -42,6 +42,8 @@ public:
   void compress(int kernel);
 };
 
+void compress_cpu_naive(std::vector<int> &parent);
+void compress_gpu(std::vector<int> &parent);
 
 
 // UnionFind with Path Compression according to the slides of Mario

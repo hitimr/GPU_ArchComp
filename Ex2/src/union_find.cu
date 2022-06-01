@@ -2,6 +2,26 @@
 #include "union_find.hpp"
 #include <vector>
 
+void UnionFind::compress(int kernel)
+{
+  g_benchmarker.start("compress()");
+
+  switch (kernel)
+  {
+  case COMPRESS_KERNEL_CPU_NAIVE:
+    compress_cpu_naive(parent);
+    break;
+  case COMPRESS_KERNEL_GPU:
+    compress_gpu(parent);
+    break;
+
+  default:
+    throw std::invalid_argument("Unknown compress kernel");
+  }
+
+  g_benchmarker.stop("compress()");
+}
+
 int find_pc(std::vector<int> &parent, int i)
 {
   if (parent[i] == i)
@@ -17,7 +37,7 @@ int find_pc(std::vector<int> &parent, int i)
 // path compression on cpu
 void compress_cpu_naive(std::vector<int> &parent)
 {
-  for (int i = 0; i < parent.size(); ++i)
+  for (int i = 0; i < (int)parent.size(); ++i)
   {
     // if more than one step is neccessary to find the root...
     if (parent[parent[i]] != i)
@@ -70,20 +90,4 @@ void compress_gpu(std::vector<int> &parent)
   cudaMemcpy(parent.data(), d_result, num_bytes, cudaMemcpyDeviceToHost);
   cudaFree(d_parent);
   cudaFree(d_result);
-}
-
-void UnionFind::compress(int kernel)
-{
-  switch (kernel)
-  {
-  case COMPRESS_KERNEL_CPU_NAIVE:
-    compress_cpu_naive(parent);
-    break;
-  case COMPRESS_KERNEL_GPU:
-    compress_gpu(parent);
-    break;
-
-  default:
-    throw std::invalid_argument("Unknown compress kernel");
-  }
 }
