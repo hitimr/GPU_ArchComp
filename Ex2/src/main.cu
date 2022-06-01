@@ -68,69 +68,15 @@ OptionsT parse_options(int ac, char **av)
   return vm;
 }
 
-__global__ void test_kernel(EdgeList *E)
-{
-  // You have access to all member variables of the class
-  printf("Number of Edges (on GPU) %d \n", (int)E->num_edges);
 
-  // you can even use class methods :D
-  printf("Number of Edges (on GPU; from class method): %d \n", (int)E->size());
-
-
-  // the index-operator does not work (yet) but you can use at() instead
-  Edge first_edge = E->at(0);
-  printf("Weight of first edge (on GPU): %i\n", (int)first_edge.weight);
-
-  // unfortunately CUDA is not able to handle std::vectors
-  // so we need to access special device-pointers for arrays or vectors
-  // Lets make some changes to the List
-  for (int i = 0; i < 3; i++)
-    E->d_val[i] = 42;
-
-  printf("First 3 edge weights after modification on GPU:\n");
-  printf("[%i,%i,%i]\n", E->d_val[0], E->d_val[1], E->d_val[2]);
-}
-
-void gpu_interface_demo(EdgeList &E)
-{
-  // Currently the EdgeList resides on CPU only
-  std::cout << "Number of Edges (on CPU): " << E.num_edges << std::endl;
-
-  // To send or update a copy of E to GPU use sync_hostToDevice();
-  E.sync_hostToDevice();
-
-  // In order to pass the GPU version of the EdgeList to a kernel use E.gpu (instead of just E)
-  test_kernel<<<1, 1>>>(E.gpu);
-  cudaDeviceSynchronize();
-
-  // Kernel has finished. Now we need to sync changes back to the host
-  printf("First 3 edge weights before sync (from CPU):\n");
-  printf("[%i,%i,%i]\n", E.val[0], E.val[1], E.val[2]);
-
-  E.sync_deviceToHost();
-
-  printf("First 3 edge weights after sync (from CPU):\n");
-  printf("[%i,%i,%i]\n", E.val[0], E.val[1], E.val[2]);
-}
-
-
-/*
 int main(int ac, char **av)
 {
   g_options = parse_options(ac, av);
   g_benchmarker = Benchmarker();
   srand(0);
 
-  // Load input file
-  // I havent found a good way for adding defaults tring to boost::options so im doing it by hand
-  std::string input_file = misc::get_proj_root_dir().append(
-      g_options.count("inputfile") ? g_options["inputfile"].as<std::vector<std::string>>()[0]
-                                   : DEFAULT_INPUT_FILE);
-  std::cout << "Loading " << input_file << std::endl;
-  EdgeList edgelist(input_file.c_str());
+  EdgeList edgelist(misc::get_input_file());
 
-  // gpu_interface_demo(edgelist);
-  
   // Perform MST Calculation
   EdgeList MST = calculate_mst(edgelist);
 
@@ -144,58 +90,7 @@ int main(int ac, char **av)
   if (g_options.count("ouputfile_timings"))
   {
     g_benchmarker.export_csv(g_options["ouputfile_timings"].as<std::vector<std::string>>()[0]);
-  }
-
-  
-
-  return 0;
-}
-*/
-
-
-
-// this alternative main tests the UnionFindPC class
-int main(){
-
-  int size = 100*1000;
-  int break_pos = 100*500;
-  int num_print = 4;
-  UnionFind P(size);
-  //UnionFindPC P(size);
-
-  for(int i = 0; i < break_pos; ++i){
-    P.link(i, i+1);
-  }
-
-  for(int i = break_pos + 1; i < size - 1; ++i){
-    P.link(i, i+1);
-  }
-
-  for(int i = 0; i < num_print; ++i)
-    std::cout << "i: " << i << ", parent: " << P.get_parent(i) << std::endl;
-
-  std::cout << "... " << std::endl;
-  for(int i = break_pos - num_print; i < break_pos + num_print; ++i)
-    std::cout << "i: " << i << ", parent: " << P.get_parent(i) << std::endl;
-  
-  std::cout << "... " << std::endl;
-  for(int i = size - num_print; i < size; ++i)
-    std::cout << "i: " << i << ", parent: " << P.get_parent(i) << std::endl;
-
-  std::cout << "now call compress ..." << std::endl;
-  P.compress(COMPRESS_KERNEL_GPU);
-
-
-  for(int i = 0; i < num_print; ++i)
-    std::cout << "i: " << i << ", parent: " << P.get_parent(i) << std::endl;
-
-  std::cout << "... " << std::endl;
-  for(int i = break_pos - num_print; i < break_pos + num_print; ++i)
-    std::cout << "i: " << i << ", parent: " << P.get_parent(i) << std::endl;
-  
-  std::cout << "... " << std::endl;
-  for(int i = size - num_print; i < size; ++i)
-    std::cout << "i: " << i << ", parent: " << P.get_parent(i) << std::endl;
+  }  
 
   return 0;
 }

@@ -39,4 +39,17 @@ static std::string get_proj_root_dir()
 
   return path;
 }
+
+
+std::string get_input_file()
+{
+  // Load input file
+  // I havent found a good way for adding defaults tring to boost::options so im doing it by hand
+  std::string input_file = misc::get_proj_root_dir().append(
+      g_options.count("inputfile") ? g_options["inputfile"].as<std::vector<std::string>>()[0]
+                                   : DEFAULT_INPUT_FILE);
+  std::cout << "Loading " << input_file << std::endl;
+
+  return input_file;
+}
 } // namespace misc
