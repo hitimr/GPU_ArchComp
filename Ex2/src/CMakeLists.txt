@@ -6,7 +6,6 @@ cuda_add_executable(ex2
     sort.cu
     graph.cu
     partition.cu
-    filter.cu
     edgelist.cu
     union_find.cu
 )
