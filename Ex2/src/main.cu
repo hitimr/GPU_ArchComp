@@ -68,7 +68,6 @@ OptionsT parse_options(int ac, char **av)
   return vm;
 }
 
-
 int main(int ac, char **av)
 {
   g_options = parse_options(ac, av);
@@ -86,15 +85,21 @@ int main(int ac, char **av)
   std::cout << std::endl << "Benchmark results:" << std::endl;
   g_benchmarker.print_timings();
 
-  // Check Solution
-  // TODO: perform full check. i.e. verify all data not just the sum of weigths
-  assert(MST.weigth() == MST_reference.weigth());
-
   // Export timings if specified
   if (g_options.count("ouputfile_timings"))
   {
     g_benchmarker.export_csv(g_options["ouputfile_timings"].as<std::vector<std::string>>()[0]);
-  }  
+  }
+
+  // Check Solution
+  // TODO: perform full check. i.e. verify all data not just the sum of weigths
+  if (MST.weigth() != MST_reference.weigth())
+  {
+    std::cout << "Error! Weight of MST does not match reference" << std::endl;
+    std::cout << "Calculated: " << MST.weigth() << std::endl;
+    std::cout << "Reference:" <<  MST_reference.weigth() << std::endl;
+    throw std::runtime_error("Weight of MST does not match reference");
+  }
 
   return 0;
 }
