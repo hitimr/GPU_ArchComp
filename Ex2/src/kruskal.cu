@@ -3,7 +3,6 @@
 #include "partition.hpp"
 #include "sort.hpp"
 #include "union_find.hpp"
-#include "filter.hpp"
 #include <cassert>
 #include <stdio.h>
 #include <vector>
