@@ -8,11 +8,19 @@ void UnionFind::compress(int kernel)
 
   switch (kernel)
   {
+  case COMPRESS_NOTHING:
+    break;
+
   case COMPRESS_KERNEL_CPU_NAIVE:
     compress_cpu_naive(parent);
     break;
+
   case COMPRESS_KERNEL_GPU:
     compress_gpu(parent);
+    break;
+
+  case COMPRESS_KERNEL_GPU_LIMITED:
+    //compress_gpu_limited(parent);  // TODO
     break;
 
   default:
