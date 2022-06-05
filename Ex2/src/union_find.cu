@@ -18,12 +18,12 @@ int find_pc(std::vector<int> &parent, int i)
 // path compression on cpu
 void compress_cpu_naive(std::vector<int> &parent)
 {
-  for (int i = 0; i < parent.size(); ++i)
+  for (size_t i = 0; i < parent.size(); ++i)
   {
     // if more than one step is neccessary to find the root...
-    if (parent[parent[i]] != i)
+    if (parent[parent[i]] != int(i))
     {
-      find_pc(parent, i);
+      find_pc(parent, int(i));
     }
   }
 }
@@ -110,6 +110,7 @@ void UnionFind::compress(int kernel)
   }
 }
 */
+
 
 void UnionFind::compress(int kernel)
 {

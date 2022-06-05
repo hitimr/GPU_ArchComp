@@ -171,6 +171,7 @@ int main(){
     P.link(i, i+1);
   }
 
+
   for(int i = 0; i < num_print; ++i)
     std::cout << "i: " << i << ", parent: " << P.get_parent(i) << std::endl;
 
