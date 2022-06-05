@@ -11,7 +11,7 @@
 #include <thrust/sort.h>
 #include <thrust/copy.h>
 
-#define BLOCK_SIZE 1024 
+#define BLOCK_SIZE 1024
 #define GRID_SIZE 1024
 
 __device__ void gpu_swap(int* vec, size_t i, size_t j){
@@ -119,62 +119,6 @@ __global__ void gpu_merge_pass(int* vec, int* output, size_t size, size_t size_t
 
 }
 
-// __device__ inline bool less(size_t &a, size_t &b){
-//     return a < b;
-// }
-
-// __device__ inline bool greater(size_t &a, size_t &b){
-//     return a > b;
-// }
-
-// __device__ inline bool greater_equal(int &a, int &b){
-//     return a >= b;
-// }
-
-// __device__ inline bool less_equal(int &a, int &b){
-//     return a <= b;
-// }
-
-// __global__ void gpu_merge_pass1(int* vec, int* output, size_t size, size_t size_to_merge){
-
-//     int thread_id = blockIdx.x*blockDim.x + threadIdx.x;
-//     int num_threads = blockDim.x * gridDim.x;
-
-//     int max_scope_to_merge = size / size_to_merge;
-//     if( size_to_merge % size > 0) max_scope_to_merge++; 
-//     max_scope_to_merge = max_scope_to_merge - (max_scope_to_merge % 2);
-
-//     for(size_t i = thread_id; i < size; i += num_threads){
-//         int my_value = vec[i];
-
-//         int position_in_current = (i % size_to_merge);
-//         int scope_id = i / size_to_merge;
-        
-//         int side = (scope_id % 2) * 2 - 1; // -1 and 1 (left / rigt)
-//         int merge_to_scope = scope_id - side;
-//         if(merge_to_scope > size / size_to_merge) continue;
-        
-
-//         int size_to_iterate = min(size_to_merge, size - (merge_to_scope*size_to_merge));
-//         size_t position_in_merged = ((side - 1) / (-2)) * size_to_iterate;
-//         size_t starting_position = ((side + 1) / (2)) * size_to_iterate;
-//         int offset = -((side + 1) / 2);
-
-//         auto comparator = side == -1 ? &less : &greater;
-//         auto comparator_values = side == -1 ? &less_equal : &greater_equal;
-
-//         for(size_t comparison_pos = starting_position; comparator(comparison_pos, position_in_merged); comparison_pos-=side){
-//             if(comparator_values(my_value, vec[merge_to_scope*size_to_merge + comparison_pos + offset])){
-//                 position_in_merged = comparison_pos;
-//                 break;
-//             }
-//         }
-
-
-//         output[min(merge_to_scope, scope_id)*size_to_merge + position_in_current + position_in_merged] = my_value;
-//     }
-
-// }
 
 double gpu_merge_sort(std::vector<int> &vec){
 
@@ -184,9 +128,11 @@ double gpu_merge_sort(std::vector<int> &vec){
     // allocate
     int* d_vec;
     int* d_tmp;
+
     cudaMalloc((void**)&d_vec, num_bytes);
     cudaMalloc((void**)&d_tmp, num_bytes);
-
+    
+    
     // copy
     cudaMemcpy(d_vec, vec.data(), num_bytes, cudaMemcpyHostToDevice);
     cudaMemcpy(d_tmp, vec.data(), num_bytes, cudaMemcpyHostToDevice);
@@ -196,13 +142,16 @@ double gpu_merge_sort(std::vector<int> &vec){
     timer.reset();
     // sort
     int *input = d_tmp;
-    int *output = d_vec;
+    int *output = d_vec;    
+    
     int *tmp;
+
 
     for(size_t size_to_merge = 1; size_to_merge < size; size_to_merge *= 2){
         tmp = input;
         input = output;
         output = tmp;
+
 
         gpu_merge_pass<<<1024, 1024>>>(input, output, size, size_to_merge);
         cudaDeviceSynchronize();                     
@@ -211,8 +160,48 @@ double gpu_merge_sort(std::vector<int> &vec){
 
     // copy back
     cudaMemcpy(vec.data(), output, sizeof(int) * vec.size(), cudaMemcpyDeviceToHost);
+
     cudaFree(d_vec);
     cudaFree(d_tmp);
+    return time_measured;
+}
+
+double gpu_thrust_sort_three(std::vector<int> &vec, std::vector<int> &vec1, std::vector<int> &vec2){
+
+    size_t size = vec.size(); 
+    int num_bytes = vec.size() * sizeof(int);
+
+    thrust::host_vector<int> h_vec = vec;
+    thrust::device_vector<int> d_vec = h_vec;
+
+    thrust::host_vector<int> h_ind_vec = vec;
+    thrust::device_vector<int> d_ind_vec = h_ind_vec;
+    thrust::sequence(h_ind_vec.begin(), h_ind_vec.end());
+    
+    thrust::copy(h_ind_vec.begin(), h_ind_vec.end(), d_ind_vec.begin());
+
+    Timer timer;
+    double time_measured = 0;
+    timer.reset();
+    thrust::sort_by_key(d_vec.begin(), d_vec.end(), d_ind_vec.begin());
+    time_measured = timer.get();
+
+    thrust::copy(d_vec.begin(), d_vec.end(), h_vec.begin());
+    thrust::copy(h_vec.begin(), h_vec.end(), vec.begin());
+
+    std::vector<int> indices(size);
+    thrust::copy(d_ind_vec.begin(), d_ind_vec.end(), h_ind_vec.begin());
+    thrust::copy(h_ind_vec.begin(), h_ind_vec.end(), indices.begin());
+    
+
+    std::vector<int> tmp_vec1, tmp_vec2;
+    tmp_vec1 = vec1;
+    tmp_vec2 = vec2;
+    for(size_t i = 0; i < size; i++){
+        vec1[i] = tmp_vec1[indices[i]];
+        vec2[i] = tmp_vec2[indices[i]];
+    }
+
     return time_measured;
 }
 
@@ -223,6 +212,7 @@ double gpu_thrust_sort(std::vector<int> &vec){
 
     thrust::host_vector<int> h_vec = vec;
     thrust::device_vector<int> d_vec = h_vec;
+
     Timer timer;
     double time_measured = 0;
     timer.reset();
@@ -232,31 +222,64 @@ double gpu_thrust_sort(std::vector<int> &vec){
     thrust::copy(d_vec.begin(), d_vec.end(), h_vec.begin());
     thrust::copy(h_vec.begin(), h_vec.end(), vec.begin());
 
-
-
-
-    
-
     return time_measured;
 }
 
-__global__ void gpu_merge_sort_thread_per_block(int* input, int* output, int size, int size_to_merge) {
+
+__global__ void gpu_merge_sort_thread_per_block_with_ind(int* input, int* output, int size, int size_to_merge, int *input_ind, int* output_ind) {
 
     int thread_id = blockIdx.x*blockDim.x + threadIdx.x;
     int num_threads = blockDim.x * gridDim.x;
+    int number_of_patches = (size / size_to_merge) + 1;
 
 
-    for(int start_point = size_to_merge*thread_id; start_point < size; start_point += (num_threads*size_to_merge)){
+    for(int patch_id = thread_id; patch_id < number_of_patches; patch_id += num_threads){
+        int start_point = patch_id * size_to_merge;
 
         int mid_point = min(start_point + (size_to_merge / 2), size);
         int end_point = min(start_point + size_to_merge, size);
 
         int current_left_pointer = start_point;
         int current_right_pointer = mid_point;
-        
+
+
         for (int position_in_merged = start_point; position_in_merged < end_point; position_in_merged++) {
             if ((current_left_pointer < mid_point) && 
-                ((input[current_left_pointer] < input[current_right_pointer]) || current_right_pointer >= end_point)){
+                (current_right_pointer >= end_point || input[current_left_pointer] < input[current_right_pointer])){
+                output[position_in_merged] = input[current_left_pointer];
+                output_ind[position_in_merged] = input_ind[current_left_pointer];
+                current_left_pointer++;
+            }
+            else {
+                output[position_in_merged] = input[current_right_pointer];
+                output_ind[position_in_merged] = input_ind[current_right_pointer];
+                current_right_pointer++;
+            }
+        }
+        
+    }
+}
+
+__global__ void gpu_merge_sort_thread_per_block(int* input, int* output, int size, int size_to_merge) {
+
+    int thread_id = blockIdx.x*blockDim.x + threadIdx.x;
+    int num_threads = blockDim.x * gridDim.x;
+    int number_of_patches = (size / size_to_merge) + 1;
+
+
+    for(int patch_id = thread_id; patch_id < number_of_patches; patch_id += num_threads){
+        int start_point = patch_id * size_to_merge;
+
+        int mid_point = min(start_point + (size_to_merge / 2), size);
+        int end_point = min(start_point + size_to_merge, size);
+
+        int current_left_pointer = start_point;
+        int current_right_pointer = mid_point;
+
+
+        for (int position_in_merged = start_point; position_in_merged < end_point; position_in_merged++) {
+            if ((current_left_pointer < mid_point) && 
+                (current_right_pointer >= end_point || input[current_left_pointer] < input[current_right_pointer])){
                 output[position_in_merged] = input[current_left_pointer];
                 current_left_pointer++;
             }
@@ -264,13 +287,13 @@ __global__ void gpu_merge_sort_thread_per_block(int* input, int* output, int siz
                 output[position_in_merged] = input[current_right_pointer];
                 current_right_pointer++;
             }
-    }
+        }
         
     }
-
-    
 }
-double mergesort(std::vector<int> &vec) {
+
+
+double improved_mergesort_three(std::vector<int> &vec, std::vector<int> &vec1, std::vector<int> &vec2) {
 
     int size = vec.size(); 
     int num_bytes = vec.size() * sizeof(int);
@@ -284,6 +307,19 @@ double mergesort(std::vector<int> &vec) {
     // copy
     cudaMemcpy(d_vec, vec.data(), num_bytes, cudaMemcpyHostToDevice);
     cudaMemcpy(d_tmp, vec.data(), num_bytes, cudaMemcpyHostToDevice);
+    
+    int* ind_vec;
+    int* ind_tmp;
+
+    cudaMalloc((void**)&ind_vec, num_bytes);
+    cudaMalloc((void**)&ind_tmp, num_bytes);
+    
+    std::vector<int> initial(size) ;
+    std::iota (std::begin(initial), std::end(initial), 0);
+
+    cudaMemcpy(ind_vec, initial.data(), num_bytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(ind_tmp, initial.data(), num_bytes, cudaMemcpyHostToDevice);
+    
 
     Timer timer;
     double time_measured = 0;
@@ -291,25 +327,94 @@ double mergesort(std::vector<int> &vec) {
 
     int *input = d_tmp;
     int *output = d_vec;
+
+    int *input_ind = ind_tmp;
+    int *output_ind = ind_vec; 
+
     int *tmp;
+    
 
     timer.reset();
-    for (int size_to_merge = 2; size_to_merge < size; size_to_merge *= 2) {
+    bool done = false;
+    for (int size_to_merge = 2; done == false; size_to_merge *= 2) {
         tmp = input;
         input = output;
         output = tmp;
 
-        // Actually call the kernel
-        gpu_merge_sort_thread_per_block<<<BLOCK_SIZE, GRID_SIZE>>>(input, output, size, size_to_merge);
+        tmp = input_ind;
+        input_ind = output_ind;
+        output_ind = tmp;
 
+        // Actually call the kernel
+        gpu_merge_sort_thread_per_block_with_ind<<<BLOCK_SIZE, GRID_SIZE>>>(input, output, size, size_to_merge, input_ind, output_ind);
+        if(size_to_merge >= size) {done = true;}
     }
     time_measured = timer.get();
 
     cudaMemcpy(vec.data(), output, size * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(initial.data(), output_ind, sizeof(int) * vec.size(), cudaMemcpyDeviceToHost);
 
+    std::vector<int> tmp_vec1, tmp_vec2;
+    tmp_vec1 = vec1;
+    tmp_vec2 = vec2;
+    for(int i = 0; i < size; i++){
+        vec1[i] = tmp_vec1[initial[i]];
+        vec2[i] = tmp_vec2[initial[i]];
+    }
+    
     // Free the GPU memory
     cudaFree(d_tmp);
     cudaFree(d_vec);
+    cudaFree(ind_tmp);
+    cudaFree(ind_vec);
+
+    return time_measured;
+}
+
+double improved_mergesort(std::vector<int> &vec) {
+
+    int size = vec.size(); 
+    int num_bytes = vec.size() * sizeof(int);
+
+    // allocate
+    int* d_vec;
+    int* d_tmp;
+    cudaMalloc((void**)&d_vec, num_bytes);
+    cudaMalloc((void**)&d_tmp, num_bytes);
+
+    // copy
+    cudaMemcpy(d_vec, vec.data(), num_bytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_tmp, vec.data(), num_bytes, cudaMemcpyHostToDevice);
+    
+    Timer timer;
+    double time_measured = 0;
+    timer.reset();
+
+    int *input = d_tmp;
+    int *output = d_vec;
+    int *tmp;
+    
+
+    timer.reset();
+    bool done = false;
+    for (int size_to_merge = 2; done == false; size_to_merge *= 2) {
+        tmp = input;
+        input = output;
+        output = tmp;
+        // Actually call the kernel
+        gpu_merge_sort_thread_per_block<<<BLOCK_SIZE, GRID_SIZE>>>(input, output, size, size_to_merge);
+        if(size_to_merge >= size) {done = true;}
+    }
+    cudaDeviceSynchronize();  
+    
+    time_measured = timer.get();
+
+    cudaMemcpy(vec.data(), output, size * sizeof(int), cudaMemcpyDeviceToHost);
+  
+    // Free the GPU memory
+    cudaFree(d_tmp);
+    cudaFree(d_vec);
+
     return time_measured;
 }
 
@@ -330,7 +435,7 @@ int main()
     size_t max_power = 30;
     size_t repetitions = 1;
     int min_range = 0;
-    int max_range = 10000;
+    int max_range = 100;
 
     
 
@@ -362,63 +467,38 @@ int main()
             timer.reset();
             std::stable_sort(cpu_vector.begin(), cpu_vector.end());
             time_cpu += timer.get();
-            for(size_t i = 0; i < cpu_vector.size(); ++i){
-                // std::cout << cpu_vector[i] << " ";
-            }
-        
-            std::vector<int> bubble_vector = org_vector;
-        
-            time_bubble += gpu_bubble_sort(bubble_vector);
-        
-        
-            for(size_t i = 0; i < bubble_vector.size(); ++i){
-                if(bubble_vector[i] != cpu_vector[i]){
-                    std::cout << "ERROR IN BUBBLE !!!!!!!!!!!!!" << std::endl;
-                    break;
-                }
-                // std::cout << bubble_vector[i] << " ";
-            }
-        
-            std::vector<int> merge_vector = org_vector;
-        
-            time_merge += gpu_merge_sort(merge_vector);
-        
-        
-            for(size_t i = 0; i < merge_vector.size(); ++i){
-                if(merge_vector[i] != cpu_vector[i]){
-                    std::cout << "ERROR IN MERGE !!!!!!!!!!!!!" << std::endl;
-                    break;
-                }
-                // std::cout << merge_vector[i] << " ";
-            }
 
             std::vector<int> thrust_vector = org_vector;
-
+            std::vector<int> thrust_vector1 = org_vector;
+            std::vector<int> thrust_vector2 = org_vector;
         
-            time_thrust += gpu_thrust_sort(thrust_vector);
+            time_thrust += gpu_thrust_sort_three(thrust_vector, thrust_vector1, thrust_vector2);
         
         
             for(size_t i = 0; i < thrust_vector.size(); ++i){
-                if(thrust_vector[i] != cpu_vector[i]){
+                if(thrust_vector[i] != cpu_vector[i] || thrust_vector1[i] != cpu_vector[i] || thrust_vector2[i] != cpu_vector[i]){
                     std::cout << "ERROR IN Thrust !!!!!!!!!!!!!" << std::endl;
                     break;
                 }
-                // std::cout << merge_vector[i] << " ";
             }
 
             std::vector<int> improved_merge_vector = org_vector;
+            std::vector<int> improved_merge_vector1 = org_vector;
+            std::vector<int> improved_merge_vector2 = org_vector;
 
         
-            time_improved_merge += gpu_thrust_sort(improved_merge_vector);
+            // std::cout << "STARTING IMPROVED" << std::endl;
+            time_improved_merge += improved_mergesort_three(improved_merge_vector, improved_merge_vector1, improved_merge_vector2);
         
         
             for(size_t i = 0; i < improved_merge_vector.size(); ++i){
-                if(improved_merge_vector[i] != cpu_vector[i]){
+                if(improved_merge_vector[i] != cpu_vector[i] || improved_merge_vector1[i] != cpu_vector[i] || improved_merge_vector2[i] != cpu_vector[i]){
                     std::cout << "ERROR IN improved_merge !!!!!!!!!!!!!" << std::endl;
                     break;
                 }
-                // std::cout << merge_vector[i] << " ";
+                // std::cout << improved_merge_vector[i] << " ";
             }
+            // std::cout << std::endl << " " << std::endl;
 
 
         }
@@ -429,7 +509,7 @@ int main()
         time_thrust = time_thrust / repetitions;
         time_improved_merge = time_improved_merge / repetitions;
 
-        std::cout << N << " " << time_cpu << " " << time_bubble << " " << time_merge << " " << time_thrust << " " << time_improved_merge << std::endl;
+        std::cout << N << " " << time_cpu  << " " << time_thrust << " " << time_improved_merge << std::endl;
    
     
     }
