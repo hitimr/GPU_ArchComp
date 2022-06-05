@@ -159,7 +159,7 @@ int main(){
 
   int size = 100*1000;
   int break_pos = 100*500;
-  int num_print = 4;
+  int num_print = 6;
   UnionFind P(size);
   //UnionFindPC P(size);
 
@@ -183,7 +183,7 @@ int main(){
     std::cout << "i: " << i << ", parent: " << P.get_parent(i) << std::endl;
 
   std::cout << "now call compress ..." << std::endl;
-  P.compress(COMPRESS_KERNEL_GPU);
+  P.compress(COMPRESS_KERNEL_GPU_LIMITED);
 
 
   for(int i = 0; i < num_print; ++i)

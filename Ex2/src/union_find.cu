@@ -2,6 +2,7 @@
 #include "union_find.hpp"
 #include <vector>
 
+// the find function, that implements path compression (from marios slides)
 int find_pc(std::vector<int> &parent, int i)
 {
   if (parent[i] == i)
@@ -49,7 +50,24 @@ __global__ void compress_kernel(int *parent, int *result, int size)
   }
 }
 
-void compress_gpu(std::vector<int> &parent)
+// limited path compression on gpu, that only compresses to a certain depth
+__global__ void compress_kernel_limited(int *parent, int *result, int size, int limit)
+{
+
+  int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
+  int num_threads = blockDim.x * gridDim.x;
+
+  for (int i = thread_id; i < size; i += num_threads)
+  {
+    result[i] = parent[i];
+    for (int ii = 0; ii < limit; ++ii){
+      result[i] = parent[result[i]];
+    }
+  }
+}
+
+
+void compress_gpu(std::vector<int> &parent, int limit = -1)
 {
 
   size_t size = parent.size();
@@ -64,7 +82,10 @@ void compress_gpu(std::vector<int> &parent)
   cudaMemcpy(d_parent, parent.data(), num_bytes, cudaMemcpyHostToDevice);
 
   // compress
-  compress_kernel<<<GRID_SIZE, BLOCK_SIZE>>>(d_parent, d_result, size);
+  if (limit == -1) // if no limit was passed... 
+    compress_kernel<<<GRID_SIZE, BLOCK_SIZE>>>(d_parent, d_result, size);
+  else // if limit was passed
+    compress_kernel_limited<<<GRID_SIZE, BLOCK_SIZE>>>(d_parent, d_result, size, limit);
 
   // copy back
   cudaMemcpy(parent.data(), d_result, num_bytes, cudaMemcpyDeviceToHost);
@@ -72,6 +93,7 @@ void compress_gpu(std::vector<int> &parent)
   cudaFree(d_result);
 }
 
+/*
 void UnionFind::compress(int kernel)
 {
   switch (kernel)
@@ -86,4 +108,34 @@ void UnionFind::compress(int kernel)
   default:
     throw std::invalid_argument("Unknown compress kernel");
   }
+}
+*/
+
+void UnionFind::compress(int kernel)
+{
+  g_benchmarker.start("compress()");
+  int limit = 3;
+
+  switch (kernel)
+  {
+  case COMPRESS_NOTHING:
+    break;
+
+  case COMPRESS_KERNEL_CPU_NAIVE:
+    compress_cpu_naive(parent);
+    break;
+
+  case COMPRESS_KERNEL_GPU:
+    compress_gpu(parent);
+    break;
+
+  case COMPRESS_KERNEL_GPU_LIMITED:
+    compress_gpu(parent,limit);  // TODO
+    break;
+
+  default:
+    throw std::invalid_argument("Unknown compress kernel");
+  }
+
+  g_benchmarker.stop("compress()");
 }
