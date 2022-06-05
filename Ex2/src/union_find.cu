@@ -112,10 +112,9 @@ void UnionFind::compress(int kernel)
 */
 
 
-void UnionFind::compress(int kernel)
+void UnionFind::compress(int kernel, int limit) // limit is optional (defaults to -1)
 {
   g_benchmarker.start("compress()");
-  int limit = 3;
 
   switch (kernel)
   {

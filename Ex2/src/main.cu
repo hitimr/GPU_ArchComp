@@ -184,7 +184,7 @@ int main(){
     std::cout << "i: " << i << ", parent: " << P.get_parent(i) << std::endl;
 
   std::cout << "now call compress ..." << std::endl;
-  P.compress(COMPRESS_KERNEL_GPU_LIMITED);
+  P.compress(COMPRESS_KERNEL_GPU_LIMITED, 1000*1000);
 
 
   for(int i = 0; i < num_print; ++i)

@@ -39,7 +39,7 @@ public:
     return parent[i];
   }
 
-  void compress(int kernel);
+  void compress(int kernel, int limit = -1);
 };
 
 
