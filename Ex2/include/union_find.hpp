@@ -23,16 +23,26 @@ public:
       return find(parent[i]);
   }
 
+  int find_and_compress(int i)
+  {
+    if (parent[i] == i)
+      return i;
+    else {
+      int root = find_and_compress(parent[i]);
+      parent[i] = root;
+      return root;
+    }
+  }
+
   void link(int i, int j)
   {
-    assert(find(i) != find(j));
     parent[i] = j;
   }
 
   void my_union(int i, int j)
   {
-    if (find(i) != find(j))
-      link(find(i), find(j));
+    if (find_and_compress(i) != find_and_compress(j))
+      link(find_and_compress(i), find_and_compress(j));
   }
 
   int get_parent(int i){

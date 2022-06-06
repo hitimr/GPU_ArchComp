@@ -43,6 +43,9 @@ OptionsT parse_options(int ac, char **av)
         po::value<int>()->default_value(DEFAULT_COMPRESS_KERNEL),
         "Kernel used for compress() [int]")
 
+        ("kruskal-threshold,k",
+        po::value<int>()->default_value(DEFAULT_KRUSKAL_THRESHOLD),
+        "Kernel used for compress() [int]")
 
         ("inputfile,i", 
         po::value<std::vector<std::string>>(), 

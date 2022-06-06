@@ -17,20 +17,22 @@ extern Benchmarker g_benchmarker;
 //#define DEFAULT_INPUT_FILE "input_data/barabasi_25000_10.csv"
 
 // Kernels
-#define MST_KERNEL_REGULAR_KRUSKAL 0
-#define MST_KERNEL_FILTER_KRUSKAL 1
+#define MST_KERNEL_REGULAR_KRUSKAL  0
+#define MST_KERNEL_FILTER_KRUSKAL   1
 
 #define SORT_KERNEL_GPU_BUBBLE_MULT 0
+#define SORT_KERNEL_MERGE_SORT      1
+#define SORT_KERNEL_THRUST          2
 
-#define PARTITION_KERNEL_CPU_NAIVE 0
-#define PARTITION_KERNEL_GPU 1
+#define PARTITION_KERNEL_CPU_NAIVE  0
+#define PARTITION_KERNEL_GPU        1
 
-#define FILTER_KERNEL_CPU_NAIVE 0
-#define FILTER_KERNEL_GPU 1
+#define FILTER_KERNEL_CPU_NAIVE     0
+#define FILTER_KERNEL_GPU           1
 
-#define COMPRESS_NOTHING 0
-#define COMPRESS_KERNEL_CPU_NAIVE 1
-#define COMPRESS_KERNEL_GPU 2
+#define COMPRESS_NOTHING            0
+#define COMPRESS_KERNEL_CPU_NAIVE   1
+#define COMPRESS_KERNEL_GPU         2
 #define COMPRESS_KERNEL_GPU_LIMITED 3
 
 
@@ -38,9 +40,10 @@ extern Benchmarker g_benchmarker;
 // Defaults
 #define MST_DEFAULT_KERNEL MST_KERNEL_FILTER_KRUSKAL        // MST
 #define SORT_DEFAULT_KERNEL SORT_KERNEL_GPU_BUBBLE_MULT     // Sort
-#define PARTITION_DEFAULT_KERNEL PARTITION_KERNEL_GPU // Partition
-#define DEFAULT_FILTER_KERNEL FILTER_KERNEL_GPU       // Filter
-#define DEFAULT_COMPRESS_KERNEL COMPRESS_KERNEL_CPU_NAIVE
+#define PARTITION_DEFAULT_KERNEL PARTITION_KERNEL_GPU       // Partition
+#define DEFAULT_FILTER_KERNEL FILTER_KERNEL_GPU             // Filter
+#define DEFAULT_COMPRESS_KERNEL COMPRESS_KERNEL_CPU_NAIVE   // Path Comrpession
+#define DEFAULT_KRUSKAL_THRESHOLD 100000                    // Kruskal Threshold
 
 // Misc
 // TODO: change grid/block size to launch parameters

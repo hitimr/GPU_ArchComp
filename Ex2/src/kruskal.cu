@@ -35,9 +35,8 @@ EdgeList calculate_mst(EdgeList &edgelist)
 
 bool kruskal_threshold(EdgeList &E)
 {
-  // TODO: remove magic number
   // arbitrary for now
-  if (E.num_edges < 4096*16)
+  if ((int) E.num_edges < g_options["kruskal-threshold"].as<int>())
   {
     return true;
   }
@@ -58,8 +57,8 @@ void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
 {
   if (kruskal_threshold(E))
   {
-    kruskal(E, P, T);
     P.compress(g_options["compress-kernel"].as<int>());
+    kruskal(E, P, T);
   }
   else
   {
@@ -96,7 +95,7 @@ void kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
   g_benchmarker.start("grow MST");
   for (size_t i = 0; i < E.num_edges; i++)
   {
-    if (P.find(E.coo1[i]) != P.find(E.coo2[i]))
+    if (P.find_and_compress(E.coo1[i]) != P.find_and_compress(E.coo2[i]))
     {
       T.append_edge(E[i]);
       P.my_union(E.coo1[i], E.coo2[i]);
