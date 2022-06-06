@@ -18,6 +18,8 @@ void sort_edgelist(EdgeList & E, int kernel)
 {
   g_benchmarker.start("sort()");
 
+  E.sync_deviceToHost();
+
   switch (kernel)
   {
   case SORT_KERNEL_GPU_BUBBLE_MULT:

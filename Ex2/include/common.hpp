@@ -46,13 +46,14 @@ extern Benchmarker g_benchmarker;
 #define DEFAULT_KRUSKAL_THRESHOLD 10000                     // Kruskal Threshold
 
 // Misc
-// TODO: change grid/block size to launch parameters
 #define EXIT_SUCCESS 0
 #define BLOCK_SIZE 256
 #define GRID_SIZE 256
 #define BLOCKSIZE BLOCK_SIZE
 #define GRIDSIZE GRID_SIZE
 
+#define HOST 1
+#define DEVICE  2
 
 #ifdef __CUDACC__
 // Only define __hostdev__ when using NVIDIA CUDA compiler

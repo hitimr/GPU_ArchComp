@@ -49,8 +49,9 @@ void filter(EdgeList &E, UnionFind &P, int kernel)
   g_benchmarker.stop("filter()");
 }
 
-void partition_cpu_naive(const EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold)
+void partition_cpu_naive(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold)
 {
+  E.sync_deviceToHost();
   // allocate both to max size so vectors dont grow
   size_t max_size = E.size();
   E_leq.reserve(max_size);
@@ -279,6 +280,8 @@ void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int 
 
 void filter_cpu_naive(EdgeList &E, UnionFind &P)
 {
+  E.sync_deviceToHost();
+
   EdgeList E_filt;
   E_filt.reserve(E.size());
 
@@ -336,6 +339,7 @@ __global__ void create_partitioned_array_filter(int *values, int *start, int *ta
 
 void filter_gpu_naive(EdgeList &E, UnionFind &P)
 {
+  E.sync_hostToDevice();
   EdgeList E_new;
 
   size_t size = E.val.size();
@@ -344,20 +348,14 @@ void filter_gpu_naive(EdgeList &E, UnionFind &P)
   int num_bytes_parents = P.parent.size() * sizeof(int);
 
   // allocate
-  int *d_E_val, *d_E_coo1, *d_E_coo2, *d_truth, *d_scanned_truth, *d_parents;
-  cudaMalloc((void **)&d_E_val, num_bytes);
-  cudaMalloc((void **)&d_E_coo1, num_bytes);
-  cudaMalloc((void **)&d_E_coo2, num_bytes);
+  int *d_truth, *d_scanned_truth, *d_parents;
   cudaMalloc((void **)&d_truth, num_bytes);
   cudaMalloc((void **)&d_scanned_truth, num_bytes);
   cudaMalloc((void **)&d_parents, num_bytes_parents);
 
-  cudaMemcpy(d_E_val, E.val.data(), num_bytes, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_E_coo1, E.coo1.data(), num_bytes, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_E_coo2, E.coo2.data(), num_bytes, cudaMemcpyHostToDevice);
   cudaMemcpy(d_parents, P.parent.data(), num_bytes_parents, cudaMemcpyHostToDevice);
 
-  check_array_filter<<<GRIDSIZE, BLOCKSIZE>>>(d_parents, d_E_coo1, d_E_coo2, d_truth, size);
+  check_array_filter<<<GRIDSIZE, BLOCKSIZE>>>(d_parents, E.d_coo1, E.d_coo2, d_truth, size);
 
   inclusive_scan(d_truth, d_scanned_truth, size);
 
@@ -365,28 +363,19 @@ void filter_gpu_naive(EdgeList &E, UnionFind &P)
 
   cudaMemcpy(sum, d_scanned_truth + size - 1, sizeof(int), cudaMemcpyDeviceToHost);
 
-  int *d_E_new_val, *d_E_new_coo1, *d_E_new_coo2;
-  cudaMalloc((void **)&d_E_new_val, sizeof(int) * sum[0]);
-  cudaMalloc((void **)&d_E_new_coo1, sizeof(int) * sum[0]);
-  cudaMalloc((void **)&d_E_new_coo2, sizeof(int) * sum[0]);
-
   // reserve some space here for leq and ge vectors
   E_new.resize_and_set_num_edges(sum[0]);
+  E_new.set_owner(DEVICE);
 
-  create_partitioned_array_filter<<<GRIDSIZE, BLOCKSIZE>>>(d_E_val, d_E_coo1, d_E_coo2, d_truth,
-                                                           d_scanned_truth, d_E_new_val,
-                                                           d_E_new_coo1, d_E_new_coo2, size);
+  create_partitioned_array_filter<<<GRIDSIZE, BLOCKSIZE>>>(E.d_val, E.d_coo1, E.d_coo2, d_truth,
+                                                           d_scanned_truth, E_new.d_val,
+                                                           E_new.d_coo1, E_new.d_coo2, size);
 
-  cudaMemcpy(E_new.val.data(), d_E_new_val, sizeof(int) * sum[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(E_new.coo1.data(), d_E_new_coo1, sizeof(int) * sum[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(E_new.coo2.data(), d_E_new_coo2, sizeof(int) * sum[0], cudaMemcpyDeviceToHost);
+  // cudaMemcpy(E_new.val.data(), d_E_new_val, sizeof(int) * sum[0], cudaMemcpyDeviceToHost);
+  // cudaMemcpy(E_new.coo1.data(), d_E_new_coo1, sizeof(int) * sum[0], cudaMemcpyDeviceToHost);
+  // cudaMemcpy(E_new.coo2.data(), d_E_new_coo2, sizeof(int) * sum[0], cudaMemcpyDeviceToHost);
+  //E_new.sync_deviceToHost();
 
-  cudaFree(d_E_val);
-  cudaFree(d_E_coo1);
-  cudaFree(d_E_coo2);
-  cudaFree(d_E_new_val);
-  cudaFree(d_E_new_coo1);
-  cudaFree(d_E_new_coo2);
   cudaFree(d_truth);
   cudaFree(d_scanned_truth);
 

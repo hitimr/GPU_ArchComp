@@ -5,6 +5,12 @@ void EdgeList::init_gpu() {}
 
 void EdgeList::sync_hostToDevice()
 {
+  if (owner == DEVICE)
+  {
+    // Nothing to do
+    return;
+  }
+
   // coo1
   size_t bytes = sizeof(int) * coo1.size();
   cudaMalloc(&d_coo1, bytes);
@@ -24,10 +30,18 @@ void EdgeList::sync_hostToDevice()
   bytes = sizeof(EdgeList);
   cudaMalloc(&gpu, bytes);
   cudaMemcpy(gpu, this, bytes, cudaMemcpyHostToDevice);
+
+  owner = DEVICE;
 }
 
 void EdgeList::sync_deviceToHost()
 {
+  if (owner == HOST)
+  {
+    // Nothing to do
+    return;
+  }
+
   // coo1
   size_t bytes = sizeof(int) * coo1.size();
   cudaMemcpy(coo1.data(), d_coo1, bytes, cudaMemcpyDeviceToHost);
@@ -39,6 +53,8 @@ void EdgeList::sync_deviceToHost()
   // val
   bytes = sizeof(int) * val.size();
   cudaMemcpy(val.data(), d_val, bytes, cudaMemcpyDeviceToHost);
+
+  owner = HOST;
 }
 
 void EdgeList::reserve(size_t size)
@@ -55,3 +71,19 @@ void EdgeList::reserve(size_t size)
   cudaMalloc(&d_val, bytes);
 }
 
+void EdgeList::resize_and_set_num_edges(size_t size)
+{
+  coo1.resize(size);
+  coo2.resize(size);
+  val.resize(size);
+  num_edges = size;
+
+  cudaFree(d_coo1);
+  cudaFree(d_coo2);
+  cudaFree(d_val);
+
+  size_t bytes = size * sizeof(int);
+  cudaMalloc(&d_coo1, bytes);
+  cudaMalloc(&d_coo2, bytes);
+  cudaMalloc(&d_val, bytes);
+}

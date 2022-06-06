@@ -50,7 +50,16 @@ int pivot(const EdgeList &E)
 {
   // rand() is sufficient for pivot elements
   int pos = rand() % E.size();
-  return E.val[pos];
+  if(E.owner == HOST)
+  {
+    return E.val[pos];
+  }
+  else
+  {
+   int val;
+   cudaMemcpy(&val, &E.d_val[pos], sizeof(int), cudaMemcpyDeviceToHost); 
+   return val;
+  }
 }
 
 void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
@@ -90,6 +99,8 @@ void kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
 
   // this will sort all three arrays according to the values in the first one
   sort_edgelist(E, g_options["sort-kernel"].as<int>());
+
+  E.sync_hostToDevice();
 
   // grow MST
   g_benchmarker.start("grow MST");

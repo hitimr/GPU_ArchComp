@@ -9,7 +9,8 @@
 class Edge
 {
 public:
-  __hostdev__ Edge(int source, int target, int weight) : source(source), target(target), weight(weight){};
+  __hostdev__ Edge(int source, int target, int weight)
+      : source(source), target(target), weight(weight){};
 
   int source;
   int target;
@@ -93,14 +94,14 @@ public:
   {
     std::ofstream file;
     file.open(file_name);
-    if(!file.is_open())
+    if (!file.is_open())
     {
       std::cout << "unable to write to " << file_name << std::endl;
       throw std::runtime_error("unable to write to " + file_name);
     }
 
     file << "H;" << val.size() + 1 << ";" << val.size() << ";1" << std::endl;
-    for(size_t i = 0; i < val.size(); i++)
+    for (size_t i = 0; i < val.size(); i++)
     {
       Edge edge = at(i);
       file << "E;" << edge.source << ";" << edge.target << ";" << edge.weight << std::endl;
@@ -108,7 +109,7 @@ public:
 
     file.close();
   }
-  
+
   // reserve memory space for [size] nodes
   // useful for more efficient calls of append_edge()
   void reserve(size_t size);
@@ -123,20 +124,20 @@ public:
     // correctly update number of nodes
   }
 
-  void resize_and_set_num_edges(size_t size)
+  void resize_and_set_num_edges(size_t size);
+
+  void set_owner(int new_owner)
   {
-    coo1.resize(size);
-    coo2.resize(size);
-    val.resize(size);
-    num_edges = size;
+    assert((new_owner == HOST) || (new_owner == DEVICE));
+    owner = new_owner;
   }
 
   int weigth()
   {
     int sum = 0;
-    for(int v : val)
+    for (int v : val)
     {
-      sum +=v;
+      sum += v;
     }
     return sum;
   }
@@ -153,6 +154,7 @@ public:
   size_t num_nodes;
   size_t num_edges;
   int direction;
+  int owner = HOST;
 
   std::vector<int> coo1;
   std::vector<int> coo2;
