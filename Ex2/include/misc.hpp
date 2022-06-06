@@ -60,4 +60,16 @@ std::string get_gt_file()
   return gt_file;
 }
 
+std::string get_output_file()
+{
+  std::string file_name = misc::get_proj_root_dir().append("/out/MST_calculated.csv");
+  return file_name;
+}
+
+std::string get_reference_output_file()
+{
+  std::string file_name = misc::get_proj_root_dir().append("/out/MST_reference.csv");
+  return file_name;
+}
+
 } // namespace misc

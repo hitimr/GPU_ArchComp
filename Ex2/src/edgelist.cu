@@ -20,6 +20,7 @@ void EdgeList::sync_hostToDevice()
   cudaMalloc(&d_val, bytes);
   cudaMemcpy(d_val, val.data(), bytes, cudaMemcpyHostToDevice);
 
+  // constants
   bytes = sizeof(EdgeList);
   cudaMalloc(&gpu, bytes);
   cudaMemcpy(gpu, this, bytes, cudaMemcpyHostToDevice);

@@ -88,11 +88,19 @@ int main(int ac, char **av)
   std::cout << std::endl << "Benchmark results:" << std::endl;
   g_benchmarker.print_timings();
 
+  // save solution to csv
+  MST.write_to_file(misc::get_output_file());
+  MST_reference.write_to_file(misc::get_reference_output_file());
+
+
   // Export timings if specified
   if (g_options.count("ouputfile_timings"))
   {
     g_benchmarker.export_csv(g_options["ouputfile_timings"].as<std::vector<std::string>>()[0]);
   }
+
+
+
 
   // Check Solution
   // TODO: perform full check. i.e. verify all data not just the sum of weigths

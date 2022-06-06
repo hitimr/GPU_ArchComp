@@ -89,6 +89,26 @@ public:
     input_file.close();
   }
 
+  void write_to_file(std::string file_name)
+  {
+    std::ofstream file;
+    file.open(file_name);
+    if(!file.is_open())
+    {
+      std::cout << "unable to write to " << file_name << std::endl;
+      throw std::runtime_error("unable to write to " + file_name);
+    }
+
+    file << "H;" << val.size() + 1 << ";" << val.size() << ";1" << std::endl;
+    for(size_t i = 0; i < val.size(); i++)
+    {
+      Edge edge = at(i);
+      file << "E;" << edge.source << ";" << edge.target << ";" << edge.weight << std::endl;
+    }
+
+    file.close();
+  }
+  
   // reserve memory space for [size] nodes
   // useful for more efficient calls of append_edge()
   void reserve(size_t size);
@@ -125,7 +145,7 @@ public:
   void append_edge(Edge &&e) { append_edge(e.source, e.target, e.weight); }
 
   Edge operator[](int index) const { return Edge(coo1[index], coo2[index], val[index]); }
-  __device__ Edge at(int index) const { return Edge(d_coo1[index], d_coo2[index], d_val[index]); }
+  Edge at(int index) const { return Edge(coo1[index], coo2[index], val[index]); }
 
   __hostdev__ size_t size() const { return num_edges; }
 
