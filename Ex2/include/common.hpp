@@ -14,7 +14,7 @@ extern Benchmarker g_benchmarker;
 
 // Options
 //#define DEFAULT_INPUT_FILE "input_data/example.csv"
-#define DEFAULT_INPUT_FILE "input_data/barabasi_sparse_10000_10.csv"
+#define DEFAULT_INPUT_FILE "input_data/barabasi_sparse_100000_10.csv"
 
 // Kernels
 #define MST_KERNEL_REGULAR_KRUSKAL  0
@@ -43,7 +43,9 @@ extern Benchmarker g_benchmarker;
 #define PARTITION_DEFAULT_KERNEL PARTITION_KERNEL_GPU       // Partition
 #define DEFAULT_FILTER_KERNEL FILTER_KERNEL_GPU             // Filter
 #define DEFAULT_COMPRESS_KERNEL COMPRESS_KERNEL_CPU_NAIVE   // Path Comrpession
-#define DEFAULT_KRUSKAL_THRESHOLD 10000                     // Kruskal Threshold
+#define DEFAULT_KRUSKAL_THRESHOLD 500000                    // Kruskal Threshold
+
+#define MINIMUM_KRUSKAL_THRESHOLD 100000
 
 // Misc
 #define EXIT_SUCCESS 0

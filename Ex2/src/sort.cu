@@ -27,7 +27,7 @@ void sort_edgelist(EdgeList & E, int kernel)
     break;
 
   case SORT_KERNEL_MERGE_SORT:
-    improved_mergesort_three(E.val, E.coo1, E.coo2);
+    improved_mergesort_three(E);
     break;
 
   case SORT_KERNEL_THRUST:
@@ -111,20 +111,21 @@ __global__ void gpu_merge_sort_thread_per_block_with_ind(int* input, int* output
 }
 
 
-void improved_mergesort_three(std::vector<int> &vec, std::vector<int> &vec1, std::vector<int> &vec2)
+// void improved_mergesort_three(std::vector<int> &vec, std::vector<int> &vec1, std::vector<int> &vec2)
+void improved_mergesort_three(EdgeList &E)
 {
-    int size = vec.size(); 
-    int num_bytes = vec.size() * sizeof(int);
+    g_benchmarker.start("sort-init");
+    E.sync_hostToDevice();
+
+    int size = E.size(); 
+    int num_bytes = E.size() * sizeof(int);
 
     // allocate
-    int* d_vec;
     int* d_tmp;
-    cudaMalloc((void**)&d_vec, num_bytes);
     cudaMalloc((void**)&d_tmp, num_bytes);
 
     // copy
-    cudaMemcpy(d_vec, vec.data(), num_bytes, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_tmp, vec.data(), num_bytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_tmp, E.d_val, num_bytes, cudaMemcpyDeviceToDevice);
     
     int* ind_vec;
     int* ind_tmp;
@@ -139,13 +140,14 @@ void improved_mergesort_three(std::vector<int> &vec, std::vector<int> &vec1, std
     cudaMemcpy(ind_tmp, initial.data(), num_bytes, cudaMemcpyHostToDevice);
     
     int *input = d_tmp;
-    int *output = d_vec;
+    int *output = E.d_val;
 
     int *input_ind = ind_tmp;
     int *output_ind = ind_vec; 
 
     int *tmp;
-    
+    g_benchmarker.stop("sort-init");
+    g_benchmarker.start("sort-sort");
 
     bool done = false;
     for (int size_to_merge = 2; done == false; size_to_merge *= 2) {
@@ -162,20 +164,26 @@ void improved_mergesort_three(std::vector<int> &vec, std::vector<int> &vec1, std
         if(size_to_merge >= size) {done = true;}
     }
 
-    cudaMemcpy(vec.data(), output, size * sizeof(int), cudaMemcpyDeviceToHost);
-    cudaMemcpy(initial.data(), output_ind, sizeof(int) * vec.size(), cudaMemcpyDeviceToHost);
+    g_benchmarker.stop("sort-sort");
+    g_benchmarker.start("sort-assembly");
+
+    // Assembly on Host
+    cudaMemcpy(E.val.data(), output, size * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(initial.data(), output_ind, sizeof(int) * E.size(), cudaMemcpyDeviceToHost);
+    E.set_owner(HOST);
 
     std::vector<int> tmp_vec1, tmp_vec2;
-    tmp_vec1 = vec1;
-    tmp_vec2 = vec2;
+    tmp_vec1 = E.coo1;
+    tmp_vec2 = E.coo2;
     for(int i = 0; i < size; i++){
-        vec1[i] = tmp_vec1[initial[i]];
-        vec2[i] = tmp_vec2[initial[i]];
+        E.coo1[i] = tmp_vec1[initial[i]];
+        E.coo2[i] = tmp_vec2[initial[i]];
     }
+
+    g_benchmarker.stop("sort-assembly");
     
     // Free the GPU memory
     cudaFree(d_tmp);
-    cudaFree(d_vec);
     cudaFree(ind_tmp);
     cudaFree(ind_vec);
 }

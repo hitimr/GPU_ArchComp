@@ -35,8 +35,13 @@ EdgeList calculate_mst(EdgeList &edgelist)
 
 bool kruskal_threshold(EdgeList &E)
 {
-  // arbitrary for now
-  if ((int) E.num_edges < g_options["kruskal-threshold"].as<int>())
+  // thresh is only calculated during the first pass
+  static const int thresh =
+      E.size() / g_options["kruskal-threshold"].as<int>() < MINIMUM_KRUSKAL_THRESHOLD
+          ? MINIMUM_KRUSKAL_THRESHOLD
+          : E.size() / g_options["kruskal-threshold"].as<int>();
+
+  if ((int)E.num_edges < thresh)
   {
     return true;
   }
@@ -50,15 +55,15 @@ int pivot(const EdgeList &E)
 {
   // rand() is sufficient for pivot elements
   int pos = rand() % E.size();
-  if(E.owner == HOST)
+  if (E.owner == HOST)
   {
     return E.val[pos];
   }
   else
   {
-   int val;
-   cudaMemcpy(&val, &E.d_val[pos], sizeof(int), cudaMemcpyDeviceToHost); 
-   return val;
+    int val;
+    cudaMemcpy(&val, &E.d_val[pos], sizeof(int), cudaMemcpyDeviceToHost);
+    return val;
   }
 }
 
@@ -81,7 +86,7 @@ void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
     {
       filter_kruskal(E_leq, P, T);
     }
-    
+
     filter(E_big, P, g_options["filter-kernel"].as<int>());
 
     if (E_big.size() != 0)

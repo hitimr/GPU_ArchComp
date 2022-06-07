@@ -49,6 +49,10 @@ public:
     std::string filepath = std::string(file_name);
     std::fstream input_file;
     input_file.open(filepath, std::ios::in);
+    if(!input_file.is_open())
+    {
+      throw std::runtime_error("Unable to open File " + file_name);
+    }
     std::string current_line;
 
     size_t counter = 0;
