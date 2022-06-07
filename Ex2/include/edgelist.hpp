@@ -156,10 +156,12 @@ public:
   int direction;
   int owner = HOST;
 
+  // CPU Data
   std::vector<int> coo1;
   std::vector<int> coo2;
   std::vector<int> val;
 
+  // GPU Data
   int *d_coo1;
   int *d_coo2;
   int *d_val;

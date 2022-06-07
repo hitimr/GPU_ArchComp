@@ -23,7 +23,7 @@ void sort_edgelist(EdgeList & E, int kernel)
   switch (kernel)
   {
   case SORT_KERNEL_GPU_BUBBLE_MULT:
-    gpu_bubble_sort_mult(E.val, E.coo1, E.coo2);
+    gpu_bubble_sort_mult(E);
     break;
 
   case SORT_KERNEL_MERGE_SORT:
@@ -224,37 +224,18 @@ __global__ void gpu_even_pass_mult(int *vec, size_t size, int *v2, int *v3)
   }
 }
 
-void gpu_bubble_sort_mult(std::vector<int> &vec, std::vector<int> &v2, std::vector<int> &v3)
+void gpu_bubble_sort_mult(EdgeList &E)
 {
+  E.sync_hostToDevice();
 
-  size_t size = vec.size();
-  int num_bytes = vec.size() * sizeof(int);
-
-  // allocate
-  int *d_vec, *d_v2, *d_v3;
-  cudaMalloc((void **)&d_vec, num_bytes);
-  cudaMalloc((void **)&d_v2, num_bytes);
-  cudaMalloc((void **)&d_v3, num_bytes);
-
-  // copy
-  cudaMemcpy(d_vec, vec.data(), num_bytes, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_v2, v2.data(), num_bytes, cudaMemcpyHostToDevice);
-  cudaMemcpy(d_v3, v3.data(), num_bytes, cudaMemcpyHostToDevice);
+  size_t size = E.size();
 
   // sort
   for (size_t i = 0; i < size_t(size / 2); ++i)
   {
-    gpu_even_pass_mult<<<BLOCK_SIZE, GRID_SIZE>>>(d_vec, size, d_v2, d_v3);
+    gpu_even_pass_mult<<<BLOCK_SIZE, GRID_SIZE>>>(E.d_val, size, E.d_coo1, E.d_coo2);
     cudaDeviceSynchronize();
-    gpu_odd_pass_mult<<<BLOCK_SIZE, GRID_SIZE>>>(d_vec, size, d_v2, d_v3);
+    gpu_odd_pass_mult<<<BLOCK_SIZE, GRID_SIZE>>>(E.d_val, size, E.d_coo1, E.d_coo2);
     cudaDeviceSynchronize();
   }
-
-  // copy back
-  cudaMemcpy(vec.data(), d_vec, sizeof(int) * vec.size(), cudaMemcpyDeviceToHost);
-  cudaMemcpy(v2.data(), d_v2, sizeof(int) * vec.size(), cudaMemcpyDeviceToHost);
-  cudaMemcpy(v3.data(), d_v3, sizeof(int) * vec.size(), cudaMemcpyDeviceToHost);
-  cudaFree(d_vec);
-  cudaFree(d_v2);
-  cudaFree(d_v3);
 }

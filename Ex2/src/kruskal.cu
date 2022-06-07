@@ -100,7 +100,7 @@ void kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
   // this will sort all three arrays according to the values in the first one
   sort_edgelist(E, g_options["sort-kernel"].as<int>());
 
-  E.sync_hostToDevice();
+  E.sync_deviceToHost();
 
   // grow MST
   g_benchmarker.start("grow MST");
