@@ -11,6 +11,8 @@ void EdgeList::sync_hostToDevice()
     return;
   }
 
+  cudaDeviceSynchronize();
+
   // coo1
   size_t bytes = sizeof(int) * coo1.size();
   cudaMalloc(&d_coo1, bytes);
@@ -41,6 +43,8 @@ void EdgeList::sync_deviceToHost()
     // Nothing to do
     return;
   }
+
+  cudaDeviceSynchronize();
 
   // coo1
   size_t bytes = sizeof(int) * coo1.size();

@@ -12,7 +12,21 @@ set(ROOT_PROJ_DIR ${CMAKE_SOURCE_DIR})
 set(OUT_DIR ${ROOT_PROJ_DIR}/out)
 
 find_package(Boost ${MINIMUM_BOOST_VERSION} REQUIRED COMPONENTS program_options)
+find_package(CUDA REQUIRED)
+
 
 message("Run directory: ${CMAKE_SOURCE_DIR}")
 
 add_subdirectory(src)
+
+
+
+
+# Tests
+option(BUILD_TESTS "Build unit tests." ON)
+if(BUILD_TESTS)
+  # Activate CTest testing framework
+  enable_testing()
+  # Add all tests in folder "tests" to the testing
+  add_subdirectory("test")
+endif()

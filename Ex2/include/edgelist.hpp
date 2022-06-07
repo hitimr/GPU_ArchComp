@@ -152,7 +152,7 @@ public:
   Edge operator[](int index) const { return Edge(coo1[index], coo2[index], val[index]); }
   Edge at(int index) const { return Edge(coo1[index], coo2[index], val[index]); }
 
-  __hostdev__ size_t size() const { return num_edges; }
+  size_t size() const { return num_edges; }
 
   // TODO: make private and create getter functions
   size_t num_nodes;
