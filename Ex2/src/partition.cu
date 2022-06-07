@@ -21,6 +21,10 @@ void partition(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold, int 
     partition_inclusive_scan(E, E_leq, E_ge, threshold);
     break;
 
+  case PARTITION_KERNEL_THRUST:
+    partition_thrust(E, E_leq, E_ge, threshold);
+    break;
+
   default:
     throw std::invalid_argument("Unknown partition kernel");
   }
@@ -282,6 +286,70 @@ void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int 
   cudaFree(d_truth_big);
   cudaFree(d_scanned_truth_small);
   cudaFree(d_scanned_truth_big);
+}
+
+// condition for partitioning with thrust
+struct is_less_equal
+{
+  int threshold;
+  is_less_equal(int t): threshold(t) {}
+
+  __host__ __device__
+  bool operator()(const int &x)
+  {
+    return x < threshold;
+  }
+};
+
+
+void partition_thrust(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold){
+  
+  size_t size = E.val.size(); 
+  int num_bytes = E.val.size() * sizeof(int);
+
+  thrust::host_vector<int> h_vec = E.val;
+  thrust::device_vector<int> d_vec = h_vec;
+
+  thrust::host_vector<int> h_ind_vec = E.val;
+  thrust::device_vector<int> d_ind_vec = h_ind_vec;
+  thrust::sequence(h_ind_vec.begin(), h_ind_vec.end());
+    
+  thrust::copy(h_ind_vec.begin(), h_ind_vec.end(), d_ind_vec.begin());
+
+  thrust::host_vector<int> h_vec_ge = E_ge.val;
+  thrust::device_vector<int> d_vec_ge = h_vec_ge;
+  
+  auto middle = thrust::stable_partition(thrust::device, d_vec.begin(), d_vec.end(), is_less_equal(threshold));
+  
+  thrust::copy(d_vec.begin(), d_vec.end(), h_vec.begin());
+  thrust::copy(h_vec.begin(), h_vec.end(), E.val.begin());
+
+  std::vector<int> indices(size);
+  thrust::copy(d_ind_vec.begin(), d_ind_vec.end(), h_ind_vec.begin());
+  thrust::copy(h_ind_vec.begin(), h_ind_vec.end(), indices.begin());
+    
+
+  std::vector<int> tmp_vec1, tmp_vec2;
+  tmp_vec1 = E.coo1;
+  tmp_vec2 = E.coo2;
+  for(size_t i = 0; i < size; i++){
+      E.coo1[i] = tmp_vec1[indices[i]];
+      E.coo2[i] = tmp_vec2[indices[i]];
+  }
+
+  int length_smaller_array = middle - d_vec.begin();
+
+  E_leq.resize_and_set_num_edges(length_smaller_array-1);
+  E_ge.resize_and_set_num_edges(length_smaller_array);
+
+  thrust::copy(E.val.begin(), E.val.begin() + length_smaller_array-1, E_leq.val.begin());
+  thrust::copy(E.coo1.begin(), E.coo1.begin() + length_smaller_array-1, E_leq.coo1.begin());
+  thrust::copy(E.coo2.begin(), E.coo2.begin() + length_smaller_array-1, E_leq.coo2.begin());
+
+  thrust::copy(E.val.begin() + length_smaller_array, E.val.end(), E_ge.val.begin());
+  thrust::copy(E.coo1.begin() + length_smaller_array, E.coo1.end(), E_ge.coo1.begin());
+  thrust::copy(E.coo2.begin() + length_smaller_array, E.coo2.end(), E_ge.coo2.begin());
+
 }
 
 void filter_cpu_naive(EdgeList &E, UnionFind &P)

@@ -13,8 +13,8 @@ extern Benchmarker g_benchmarker;
 #define PROJ_ROOT_FOLDER_NAME "Ex2"
 
 // Options
-#define DEFAULT_INPUT_FILE "input_data/example.csv"
-//#define DEFAULT_INPUT_FILE "input_data/barabasi_25000_10.csv"
+//#define DEFAULT_INPUT_FILE "input_data/example.csv"
+#define DEFAULT_INPUT_FILE "input_data/barabasi_25000_10.csv"
 
 // Kernels
 #define MST_KERNEL_REGULAR_KRUSKAL  0
@@ -26,6 +26,7 @@ extern Benchmarker g_benchmarker;
 
 #define PARTITION_KERNEL_CPU_NAIVE  0
 #define PARTITION_KERNEL_GPU        1
+#define PARTITION_KERNEL_THRUST     2
 
 #define FILTER_KERNEL_CPU_NAIVE     0
 #define FILTER_KERNEL_GPU           1
@@ -40,10 +41,10 @@ extern Benchmarker g_benchmarker;
 // Defaults
 #define MST_DEFAULT_KERNEL MST_KERNEL_FILTER_KRUSKAL        // MST
 #define SORT_DEFAULT_KERNEL SORT_KERNEL_GPU_BUBBLE_MULT     // Sort
-#define PARTITION_DEFAULT_KERNEL PARTITION_KERNEL_GPU       // Partition
+#define PARTITION_DEFAULT_KERNEL PARTITION_KERNEL_THRUST    // Partition
 #define DEFAULT_FILTER_KERNEL FILTER_KERNEL_GPU             // Filter
 #define DEFAULT_COMPRESS_KERNEL COMPRESS_KERNEL_CPU_NAIVE   // Path Comrpession
-#define DEFAULT_KRUSKAL_THRESHOLD 100000                    // Kruskal Threshold
+#define DEFAULT_KRUSKAL_THRESHOLD 1000                    // Kruskal Threshold
 
 // Misc
 // TODO: change grid/block size to launch parameters
