@@ -118,7 +118,6 @@ __global__ void gpu_merge_sort_thread_per_block_with_ind(int *input, int *output
 // &vec2)
 void improved_mergesort_three(EdgeList &E)
 {
-  g_benchmarker.start("sort-init");
   E.sync_hostToDevice();
 
   int size = E.size();
@@ -150,8 +149,6 @@ void improved_mergesort_three(EdgeList &E)
   int *output_ind = ind_vec;
 
   int *tmp;
-  g_benchmarker.stop("sort-init");
-  g_benchmarker.start("sort-sort");
 
   bool done = false;
   for (int size_to_merge = 2; done == false; size_to_merge *= 2)
@@ -169,15 +166,12 @@ void improved_mergesort_three(EdgeList &E)
         input, output, size, size_to_merge, input_ind, output_ind);
 
     cudaDeviceSynchronize();
-    
+
     if (size_to_merge >= size)
     {
       done = true;
     }
   }
-
-  g_benchmarker.stop("sort-sort");
-  g_benchmarker.start("sort-assembly");
 
   // Assembly on Host
   cudaMemcpy(E.val.data(), output, size * sizeof(int), cudaMemcpyDeviceToHost);
@@ -192,8 +186,6 @@ void improved_mergesort_three(EdgeList &E)
     E.coo1[i] = tmp_vec1[initial[i]];
     E.coo2[i] = tmp_vec2[initial[i]];
   }
-
-  g_benchmarker.stop("sort-assembly");
 
   // Free the GPU memory
   cudaFree(d_tmp);
