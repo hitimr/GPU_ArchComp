@@ -9,6 +9,8 @@
 
 void partition(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold, int kernel)
 {
+  E.sync_deviceToHost();  // TODO: remove before release
+
   g_benchmarker.start("partition()");
 
   switch (kernel)
