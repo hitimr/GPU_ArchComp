@@ -14,7 +14,6 @@
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
 
-
 #define MAX_BLOCK_SZ 128
 
 #define MAX_BLOCK_SZ 128
@@ -49,7 +48,7 @@ void sort_edgelist(EdgeList &E, int kernel)
     break;
 
   case SORT_KERNEL_RADIX:
-    radix_sort(E.val, E.coo1, E.coo2);
+    radix_sort(E);
     break;
 
   default:
@@ -132,8 +131,8 @@ __global__ void gpu_merge_sort_thread_per_block_with_ind(int *input, int *output
 }
 
 // void improved_mergesort_three(std::vector<int> &vec, std::vector<int> &vec1, std::vector<int>
-// &vec2)
 void improved_mergesort_three(EdgeList &E)
+// &vec2)
 {
   E.sync_hostToDevice();
 
@@ -269,8 +268,6 @@ void gpu_bubble_sort_mult(EdgeList &E)
     cudaDeviceSynchronize();
   }
 }
-
-
 
 __global__ void final_sort(int *in, int *out, int size, int *in_ind, int *out_ind, int *prefixes,
                            int *block_sums, int bit_shift)
@@ -517,16 +514,18 @@ __global__ void first_stage(int *in, int *out, int size, int *in_ind, int *out_i
   }
 }
 
-void radix_sort(std::vector<int> &vec, std::vector<int> &vec1, std::vector<int> &vec2)
+void radix_sort(EdgeList &E)
 {
-  int size = vec.size();
+  E.sync_hostToDevice();
+
+  int size = E.size();
   int split_size = 4;
 
-  int *cuda_in;
+  // int *cuda_in;
   int *cuda_out;
-  cudaMalloc(&cuda_in, sizeof(int) * size);
+  // cudaMalloc(&cuda_in, sizeof(int) * size);
   cudaMalloc(&cuda_out, sizeof(int) * size);
-  cudaMemcpy(cuda_in, vec.data(), sizeof(int) * size, cudaMemcpyHostToDevice);
+  // cudaMemcpy(cuda_in, vec.data(), sizeof(int) * size, cudaMemcpyHostToDevice);
 
   int *cuda_ind_vec;
   int *cuda_ind_tmp;
@@ -558,7 +557,7 @@ void radix_sort(std::vector<int> &vec, std::vector<int> &vec1, std::vector<int> 
 
   for (int current_bits = 0; current_bits <= 30; current_bits += 2)
   {
-    first_stage<<<grid_size, BLOCK_SIZE, memory_size>>>(cuda_in, cuda_out, size, cuda_ind_vec,
+    first_stage<<<grid_size, BLOCK_SIZE, memory_size>>>(E.d_val, cuda_out, size, cuda_ind_vec,
                                                         cuda_ind_tmp, cuda_prefix_sums,
                                                         cuda_block_sums, current_bits);
 
@@ -613,22 +612,23 @@ void radix_sort(std::vector<int> &vec, std::vector<int> &vec1, std::vector<int> 
 
     cudaFree(partial_sums);
 
-    final_sort<<<grid_size, BLOCK_SIZE>>>(cuda_out, cuda_in, size, cuda_ind_tmp, cuda_ind_vec,
+    final_sort<<<grid_size, BLOCK_SIZE>>>(cuda_out, E.d_val, size, cuda_ind_tmp, cuda_ind_vec,
                                           cuda_prefix_sums, cuda_scan_block_sums, current_bits);
   }
-  cudaMemcpy(vec.data(), cuda_in, sizeof(int) * size, cudaMemcpyDeviceToHost);
+  cudaMemcpy(E.val.data(), E.d_val, sizeof(int) * size, cudaMemcpyDeviceToHost);
   cudaMemcpy(initial.data(), cuda_ind_tmp, size * sizeof(int), cudaMemcpyDeviceToHost);
+  E.set_owner(HOST);
 
   std::vector<int> tmp_vec1, tmp_vec2;
-  tmp_vec1 = vec1;
-  tmp_vec2 = vec2;
+  tmp_vec1 = E.coo1;
+  tmp_vec2 = E.coo2;
   for (int i = 0; i < size; i++)
   {
-    vec1[i] = tmp_vec1[initial[i]];
-    vec2[i] = tmp_vec2[initial[i]];
+    E.coo1[i] = tmp_vec1[initial[i]];
+    E.coo2[i] = tmp_vec2[initial[i]];
   }
 
-  cudaFree(cuda_in);
+  // cudaFree(cuda_in);
   cudaFree(cuda_out);
   cudaFree(cuda_ind_tmp);
   cudaFree(cuda_ind_vec);
