@@ -37,9 +37,9 @@ bool kruskal_threshold(EdgeList &E)
 {
   // thresh is only calculated during the first pass
   static const int thresh =
-      E.size() / g_options["kruskal-threshold"].as<int>() < MINIMUM_KRUSKAL_THRESHOLD
+      E.size() / g_options["recusion-depth"].as<int>() < MINIMUM_KRUSKAL_THRESHOLD
           ? MINIMUM_KRUSKAL_THRESHOLD
-          : E.size() / g_options["kruskal-threshold"].as<int>();
+          : E.size() / g_options["recusion-depth"].as<int>();
 
   if ((int)E.num_edges < thresh)
   {
@@ -57,10 +57,12 @@ int pivot(const EdgeList &E)
   int pos = rand() % E.size();
   if (E.owner == HOST)
   {
-    return E.val[pos];
+    // Most recent data is on HOST
+    return E.val[pos];  
   }
   else
   {
+    // Most recent data is on DEVICE
     int val;
     cudaMemcpy(&val, &E.d_val[pos], sizeof(int), cudaMemcpyDeviceToHost);
     return val;

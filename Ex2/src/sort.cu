@@ -79,7 +79,6 @@ __global__ void gpu_merge_sort_thread_per_block_with_ind(int *input, int *output
                                                          int size_to_merge, int *input_ind,
                                                          int *output_ind)
 {
-
   int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
   int num_threads = blockDim.x * gridDim.x;
   int number_of_patches = (size / size_to_merge) + 1;

@@ -43,9 +43,13 @@ OptionsT parse_options(int ac, char **av)
         po::value<int>()->default_value(DEFAULT_COMPRESS_KERNEL),
         "Kernel used for compress() [int]")
 
-        ("kruskal-threshold,k",
-        po::value<int>()->default_value(DEFAULT_KRUSKAL_THRESHOLD),
+        ("recusion-depth,r",
+        po::value<int>()->default_value(DEFAULT_MAX_RECURSION_DEPTH),
         "Kernel used for compress() [int]")
+
+        ("repetitions,n",
+        po::value<int>()->default_value(DEFAULT_REPETITIONS),
+        "Number of times the MST calculation is repeated [int]")
 
         ("inputfile,i", 
         po::value<std::vector<std::string>>(), 
@@ -82,7 +86,12 @@ int main(int ac, char **av)
   std::cout << edgelist.size() << " Edges loaded" << std::endl;
 
   // Perform MST Calculation
-  EdgeList MST = calculate_mst(edgelist);
+
+  EdgeList MST;
+  for (int i = 0; i < g_options["repetitions"].as<int>(); i++)
+  {
+    MST = calculate_mst(edgelist);
+  }
 
   // Print timings to console
   std::cout << std::endl << "Benchmark results:" << std::endl;
@@ -92,15 +101,11 @@ int main(int ac, char **av)
   MST.write_to_file(misc::get_output_file());
   MST_reference.write_to_file(misc::get_reference_output_file());
 
-
   // Export timings if specified
   if (g_options.count("ouputfile_timings"))
   {
     g_benchmarker.export_csv(g_options["ouputfile_timings"].as<std::vector<std::string>>()[0]);
   }
-
-
-
 
   // Check Solution
   // TODO: perform full check. i.e. verify all data not just the sum of weigths
@@ -108,7 +113,7 @@ int main(int ac, char **av)
   {
     std::cout << "Error! Weight of MST does not match reference" << std::endl;
     std::cout << "Calculated: " << MST.weigth() << std::endl;
-    std::cout << "Reference:" <<  MST_reference.weigth() << std::endl;
+    std::cout << "Reference:" << MST_reference.weigth() << std::endl;
     throw std::runtime_error("Weight of MST does not match reference");
   }
 
