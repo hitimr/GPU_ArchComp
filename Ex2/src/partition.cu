@@ -21,6 +21,10 @@ void partition(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold, int 
     partition_inclusive_scan(E, E_leq, E_ge, threshold);
     break;
 
+  case PARTITION_KERNEL_THRUST:
+    partition_thrust(E, E_leq, E_ge, threshold);
+    break;
+
   default:
     throw std::invalid_argument("Unknown partition kernel");
   }
@@ -380,4 +384,71 @@ void filter_gpu_naive(EdgeList &E, UnionFind &P)
   cudaFree(d_scanned_truth);
 
   E = E_new;
+}
+
+
+
+
+// condition for partitioning with thrust
+struct is_less_equal
+{
+  int threshold;
+  is_less_equal(int t): threshold(t) {}
+
+  __host__ __device__
+  bool operator()(const int &x)
+  {
+    return x <= threshold;
+  }
+};
+
+
+struct is_greater
+{
+  int threshold;
+  is_greater(int t): threshold(t) {}
+
+  __host__ __device__
+  bool operator()(const int &x)
+  {
+    return x > threshold;
+  }
+};
+
+void partition_thrust(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold){
+
+  //thrust::host_vector<int> h_E_val = E.val;
+  thrust::device_vector<int> d_E_val = E.val;
+  //thrust::host_vector<int> h_E_coo1 = E.coo1;
+  thrust::device_vector<int> d_E_coo1 = E.coo1;
+  //thrust::host_vector<int> h_E_coo2 = E.coo2;
+  thrust::device_vector<int> d_E_coo2 = E.coo2;
+
+  int size_smaller = thrust::count_if(thrust::device, d_E_val.begin(), d_E_val.end(), is_less_equal(threshold));
+
+  E_leq.resize_and_set_num_edges(size_smaller);
+  E_ge.resize_and_set_num_edges(E.val.size()-size_smaller);
+
+  thrust::device_vector<int> d_E_leq_val = E_leq.val;
+  thrust::device_vector<int> d_E_leq_coo1 = E_leq.coo1;
+  thrust::device_vector<int> d_E_leq_coo2 = E_leq.coo2;
+
+  thrust::copy_if(thrust::device, d_E_val.begin(), d_E_val.end(), d_E_val.begin(), d_E_leq_val.begin(), is_less_equal(threshold));
+  thrust::copy(d_E_leq_val.begin(), d_E_leq_val.end(), E_leq.val.begin());
+  thrust::copy_if(thrust::device, d_E_coo1.begin(), d_E_coo1.end(), d_E_val.begin(), d_E_leq_coo1.begin(), is_less_equal(threshold));
+  thrust::copy(d_E_leq_coo1.begin(), d_E_leq_coo1.end(), E_leq.coo1.begin());
+  thrust::copy_if(thrust::device, d_E_coo2.begin(), d_E_coo2.end(), d_E_val.begin(), d_E_leq_coo2.begin(), is_less_equal(threshold));
+  thrust::copy(d_E_leq_coo2.begin(), d_E_leq_coo2.end(), E_leq.coo2.begin());
+
+  thrust::device_vector<int> d_E_ge_val = E_ge.val;
+  thrust::device_vector<int> d_E_ge_coo1 = E_ge.coo1;
+  thrust::device_vector<int> d_E_ge_coo2 = E_ge.coo2;
+
+  thrust::copy_if(thrust::device, d_E_val.begin(), d_E_val.end(), d_E_val.begin(), d_E_ge_val.begin(), is_greater(threshold));
+  thrust::copy(d_E_ge_val.begin(), d_E_ge_val.end(), E_ge.val.begin());
+  thrust::copy_if(thrust::device, d_E_coo1.begin(), d_E_coo1.end(), d_E_val.begin(), d_E_ge_coo1.begin(), is_greater(threshold));
+  thrust::copy(d_E_ge_coo1.begin(), d_E_ge_coo1.end(), E_ge.coo1.begin());
+  thrust::copy_if(thrust::device, d_E_coo2.begin(), d_E_coo2.end(), d_E_val.begin(), d_E_ge_coo2.begin(), is_greater(threshold));
+  thrust::copy(d_E_ge_coo2.begin(), d_E_ge_coo2.end(), E_ge.coo2.begin());
+
 }
