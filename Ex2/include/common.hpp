@@ -23,6 +23,7 @@ extern Benchmarker g_benchmarker;
 #define SORT_KERNEL_GPU_BUBBLE_MULT 0
 #define SORT_KERNEL_MERGE_SORT      1
 #define SORT_KERNEL_THRUST          2
+#define SORT_KERNEL_RADIX           3
 
 #define PARTITION_KERNEL_CPU_NAIVE  0
 #define PARTITION_KERNEL_GPU        1
