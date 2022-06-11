@@ -419,38 +419,38 @@ struct is_greater
 
 void partition_thrust(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold){
 
-  //thrust::host_vector<int> h_E_val = E.val;
-  thrust::device_vector<int> d_E_val = E.val;
-  //thrust::host_vector<int> h_E_coo1 = E.coo1;
-  thrust::device_vector<int> d_E_coo1 = E.coo1;
-  //thrust::host_vector<int> h_E_coo2 = E.coo2;
-  thrust::device_vector<int> d_E_coo2 = E.coo2;
+  E.sync_hostToDevice();
+  size_t size_E = E.val.size();
 
-  int size_smaller = thrust::count_if(thrust::device, d_E_val.begin(), d_E_val.end(), is_less_equal(threshold));
+  thrust::device_ptr<int> ptr_E_d_val(&E.d_val[0]);
+  thrust::device_ptr<int> ptr_E_d_coo1(&E.d_coo1[0]);
+  thrust::device_ptr<int> ptr_E_d_coo2(&E.d_coo2[0]);
+
+  int size_smaller = thrust::count_if(thrust::device, ptr_E_d_val, ptr_E_d_val+size_E, is_less_equal(threshold));
+  int size_bigger = size_E - size_smaller;
 
   E_leq.resize_and_set_num_edges(size_smaller);
-  E_ge.resize_and_set_num_edges(E.val.size()-size_smaller);
+  E_ge.resize_and_set_num_edges(size_bigger);
 
-  thrust::device_vector<int> d_E_leq_val = E_leq.val;
-  thrust::device_vector<int> d_E_leq_coo1 = E_leq.coo1;
-  thrust::device_vector<int> d_E_leq_coo2 = E_leq.coo2;
+  E_leq.sync_hostToDevice();
+  E_ge.sync_hostToDevice();
 
-  thrust::copy_if(thrust::device, d_E_val.begin(), d_E_val.end(), d_E_val.begin(), d_E_leq_val.begin(), is_less_equal(threshold));
-  thrust::copy(d_E_leq_val.begin(), d_E_leq_val.end(), E_leq.val.begin());
-  thrust::copy_if(thrust::device, d_E_coo1.begin(), d_E_coo1.end(), d_E_val.begin(), d_E_leq_coo1.begin(), is_less_equal(threshold));
-  thrust::copy(d_E_leq_coo1.begin(), d_E_leq_coo1.end(), E_leq.coo1.begin());
-  thrust::copy_if(thrust::device, d_E_coo2.begin(), d_E_coo2.end(), d_E_val.begin(), d_E_leq_coo2.begin(), is_less_equal(threshold));
-  thrust::copy(d_E_leq_coo2.begin(), d_E_leq_coo2.end(), E_leq.coo2.begin());
+  thrust::device_ptr<int> ptr_E_leq_d_val(&E_leq.d_val[0]);
+  thrust::device_ptr<int> ptr_E_leq_d_coo1(&E_leq.d_coo1[0]);
+  thrust::device_ptr<int> ptr_E_leq_d_coo2(&E_leq.d_coo2[0]);
 
-  thrust::device_vector<int> d_E_ge_val = E_ge.val;
-  thrust::device_vector<int> d_E_ge_coo1 = E_ge.coo1;
-  thrust::device_vector<int> d_E_ge_coo2 = E_ge.coo2;
+  thrust::copy_if(thrust::device, ptr_E_d_val, ptr_E_d_val+size_E, ptr_E_d_val, ptr_E_leq_d_val, is_less_equal(threshold));
+  thrust::copy_if(thrust::device, ptr_E_d_coo1, ptr_E_d_coo1+size_E, ptr_E_d_val, ptr_E_leq_d_coo1, is_less_equal(threshold));
+  thrust::copy_if(thrust::device, ptr_E_d_coo2, ptr_E_d_coo2+size_E, ptr_E_d_val, ptr_E_leq_d_coo2, is_less_equal(threshold));
+  E_leq.sync_deviceToHost();
 
-  thrust::copy_if(thrust::device, d_E_val.begin(), d_E_val.end(), d_E_val.begin(), d_E_ge_val.begin(), is_greater(threshold));
-  thrust::copy(d_E_ge_val.begin(), d_E_ge_val.end(), E_ge.val.begin());
-  thrust::copy_if(thrust::device, d_E_coo1.begin(), d_E_coo1.end(), d_E_val.begin(), d_E_ge_coo1.begin(), is_greater(threshold));
-  thrust::copy(d_E_ge_coo1.begin(), d_E_ge_coo1.end(), E_ge.coo1.begin());
-  thrust::copy_if(thrust::device, d_E_coo2.begin(), d_E_coo2.end(), d_E_val.begin(), d_E_ge_coo2.begin(), is_greater(threshold));
-  thrust::copy(d_E_ge_coo2.begin(), d_E_ge_coo2.end(), E_ge.coo2.begin());
+  thrust::device_ptr<int> ptr_E_ge_d_val(&E_ge.d_val[0]);
+  thrust::device_ptr<int> ptr_E_ge_d_coo1(&E_ge.d_coo1[0]);
+  thrust::device_ptr<int> ptr_E_ge_d_coo2(&E_ge.d_coo2[0]);
+
+  thrust::copy_if(thrust::device, ptr_E_d_val, ptr_E_d_val+size_E, ptr_E_d_val, ptr_E_ge_d_val, is_greater(threshold));
+  thrust::copy_if(thrust::device, ptr_E_d_coo1, ptr_E_d_coo1+size_E, ptr_E_d_val, ptr_E_ge_d_coo1, is_greater(threshold));
+  thrust::copy_if(thrust::device, ptr_E_d_coo2, ptr_E_d_coo2+size_E, ptr_E_d_val, ptr_E_ge_d_coo2, is_greater(threshold));
+  E_ge.sync_deviceToHost();
 
 }

@@ -2,6 +2,7 @@
 #include "edgelist.hpp"
 #include "union_find.hpp"
 #include <vector>
+#include <array>
 #include <thrust/partition.h>
 #include <thrust/execution_policy.h>
 #include <thrust/host_vector.h>
