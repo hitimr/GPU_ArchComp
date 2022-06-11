@@ -20,3 +20,4 @@ void partition_thrust(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshol
 void filter(EdgeList &E, UnionFind &P, int kernel);
 void filter_cpu_naive(EdgeList &E, UnionFind &P);
 void filter_gpu_naive(EdgeList &E, UnionFind &P);
+void filter_thrust(EdgeList &E, UnionFind &P);

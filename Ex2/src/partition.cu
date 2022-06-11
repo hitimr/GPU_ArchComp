@@ -48,6 +48,10 @@ void filter(EdgeList &E, UnionFind &P, int kernel)
     filter_gpu_naive(E, P);
     break;
 
+  case FILTER_KERNEL_THRUST:
+    filter_thrust(E, P);
+    break;
+
   default:
     throw std::invalid_argument("Unknown filter kernel");
   }
@@ -453,4 +457,60 @@ void partition_thrust(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshol
   thrust::copy_if(thrust::device, ptr_E_d_coo2, ptr_E_d_coo2+size_E, ptr_E_d_val, ptr_E_ge_d_coo2, is_greater(threshold));
   E_ge.sync_deviceToHost();
 
+}
+
+
+
+struct is_valid
+{
+  __host__ __device__
+  bool operator()(const int &x)
+  {
+    return x;
+  }
+};
+
+
+
+void filter_thrust(EdgeList &E, UnionFind &P)
+{
+  E.sync_hostToDevice();
+  EdgeList E_new;
+
+  size_t size = E.val.size();
+  int num_bytes = E.val.size() * sizeof(int);
+
+  thrust::device_ptr<int> ptr_E_d_val(&E.d_val[0]);
+  thrust::device_ptr<int> ptr_E_d_coo1(&E.d_coo1[0]);
+  thrust::device_ptr<int> ptr_E_d_coo2(&E.d_coo2[0]);
+
+  int num_bytes_parents = P.parent.size() * sizeof(int);
+
+  // allocate
+  int *d_truth, *d_parents;
+  cudaMalloc((void **)&d_truth, num_bytes);
+  thrust::device_ptr<int> ptr_d_truth(&d_truth[0]);
+  cudaMalloc((void **)&d_parents, num_bytes_parents);
+
+  cudaMemcpy(d_parents, P.parent.data(), num_bytes_parents, cudaMemcpyHostToDevice);
+
+  check_array_filter<<<GRIDSIZE, BLOCKSIZE>>>(d_parents, E.d_coo1, E.d_coo2, d_truth, size);
+
+  int size_E_new = thrust::count_if(thrust::device, ptr_d_truth, ptr_d_truth+size, is_valid());
+
+  // reserve some space here for leq and ge vectors
+  E_new.resize_and_set_num_edges(size_E_new);
+  E_new.set_owner(DEVICE);
+
+  thrust::device_ptr<int> ptr_E_new_d_val(&E_new.d_val[0]);
+  thrust::device_ptr<int> ptr_E_new_d_coo1(&E_new.d_coo1[0]);
+  thrust::device_ptr<int> ptr_E_new_d_coo2(&E_new.d_coo2[0]);
+
+  thrust::copy_if(thrust::device, ptr_E_d_val, ptr_E_d_val+size, ptr_d_truth, ptr_E_new_d_val, is_valid());
+  thrust::copy_if(thrust::device, ptr_E_d_coo1, ptr_E_d_coo1+size, ptr_d_truth, ptr_E_new_d_coo1, is_valid());
+  thrust::copy_if(thrust::device, ptr_E_d_coo2, ptr_E_d_coo2+size, ptr_d_truth, ptr_E_new_d_coo2, is_valid());
+
+  cudaFree(d_truth);
+
+  E = E_new;
 }
