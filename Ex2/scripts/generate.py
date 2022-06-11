@@ -83,19 +83,50 @@ def calculate_mst(g: ig.Graph):
     return g.spanning_tree(weights=g.get_edge_dataframe()["weight"])
 
 
+
+def create_graphs(graph_list, output_dir=common.INPUT_DATA_DIR, create_mst=True):
+    # graph list is a list of dictionaries:
+    # [{n_nodes: int, connectivity: int, w_min: int, w_max: int}]
+    for graph in graph_list:
+#        print(graph)
+#        print(graph["n_nodes"])
+
+        base_filename = output_dir / \
+        f"barabasi_{graph['n_nodes']}_{graph['connectivity']}"        
+
+        # generate Connected, weithed graph
+        g = generate_graph(n_nodes=graph['n_nodes'], connectivity=graph['connectivity'], 
+                            w_min=graph['w_min'], w_max=graph['w_max'])
+
+        # save graph and mst to file
+        export_graph(g, f"{base_filename}.csv")
+
+        # calculate reference solution using igraph
+        if create_mst:
+            g_mst_gt = calculate_mst(g)
+            export_graph(g_mst_gt, f"{base_filename}_mst_gt.csv")
+
+
+
 if __name__ == "__main__":
-    n_nodes = 25000
-    connectivity = 10
+    print(common.WORKSPACE_DIR.parent)
 
-    base_filename = common.INPUT_DATA_DIR / \
-        f"barabasi_{n_nodes}_{connectivity}"
+    graph_list = [
+        {"n_nodes": 10*1000, "connectivity": 1000, "w_min": 1, "w_max": 100},
+#        {"n_nodes": 100*1000, "connectivity": 10*1000, "w_min": 1, "w_max": 100},
+#        {"n_nodes": 1000*1000, "connectivity": 100*1000, "w_min": 1, "w_max": 100}
+    ]
 
-    # generate Connected, weithed graph
-    g = generate_graph(n_nodes=n_nodes, connectivity=3)
+#    density_10perc = [
+#        {"n_nodes": 10*1000, "connectivity": 1000, "w_min": 1, "w_max": 100},
+#        {"n_nodes": 100*1000, "connectivity": 10*1000, "w_min": 1, "w_max": 100},
+#        {"n_nodes": 1000*1000, "connectivity": 100*1000, "w_min": 1, "w_max": 100}
+#    ]
 
-    # calculate reference solution using igraph
-    g_mst_gt = calculate_mst(g)
 
-    # save graph and mst to file
-    export_graph(g, f"{base_filename}.csv")
-    export_graph(g_mst_gt, f"{base_filename}_mst_gt.csv")
+#    graph_list = [
+#        {"n_nodes": 9876, "connectivity": 321, "w_min": 1, "w_max": 100}
+#    ]
+
+    out_dir = common.INPUT_DATA_DIR / "tester"
+    create_graphs(graph_list, output_dir=out_dir)
