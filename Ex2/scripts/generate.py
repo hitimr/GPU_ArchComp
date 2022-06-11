@@ -1,12 +1,27 @@
 import numpy as np
 import pandas as pd
 import igraph as ig
+import time
+import math
+import random
 
 import common
 
+
+
+
+def generate_connected_graph(n_nodes, n_edges, w_min=0, w_max=100, random_seed=0):
+    random.seed(random_seed)
+    print("generate graph called")
+    print("random number: ", random.randrange(n_nodes))
+
+
+    pass
+
+
+
 # Generate a random, connected graph using Barabasi algorithm
 # Edges are bidirectional with random weights
-
 
 def generate_graph(n_nodes: int, connectivity: int, w_min=0, w_max=100):
     """_summary_
@@ -82,51 +97,65 @@ def calculate_mst(g: ig.Graph):
     """
     return g.spanning_tree(weights=g.get_edge_dataframe()["weight"])
 
-
+def graph_stats(num_edges, density):
+    num_nodes = int(math.sqrt(num_edges/density))
+    connectivity = int(num_nodes * density)
+    return num_nodes, connectivity
 
 def create_graphs(graph_list, output_dir=common.INPUT_DATA_DIR, create_mst=True):
     # graph list is a list of dictionaries:
-    # [{n_nodes: int, connectivity: int, w_min: int, w_max: int}]
+    # [{n_edges: int, density: float, w_min: int, w_max: int}]
     for graph in graph_list:
 #        print(graph)
 #        print(graph["n_nodes"])
 
         base_filename = output_dir / \
-        f"barabasi_{graph['n_nodes']}_{graph['connectivity']}"        
+        f"barabasi_{graph['n_edges']}_{graph['density']}" 
 
         # generate Connected, weithed graph
-        g = generate_graph(n_nodes=graph['n_nodes'], connectivity=graph['connectivity'], 
-                            w_min=graph['w_min'], w_max=graph['w_max'])
+        print("generating graph... n_edges: {:.1e}, density: {:.3f}".format(graph['n_edges'], graph['density']))
+        start_time = time.time()
+        n_nodes, connectivity = graph_stats(graph['n_edges'], graph['density'])
+        print("settling for n_nodes: {}, connectivity: {}, n_edges: {:.3e}".format(n_nodes, connectivity, n_nodes*connectivity))
+        g = generate_graph(n_nodes, connectivity, w_min=graph['w_min'], w_max=graph['w_max'])
+        print("graph generated in {:.2f} seconds".format(time.time() - start_time))
 
         # save graph and mst to file
+        print("exporting...")
         export_graph(g, f"{base_filename}.csv")
+        print("export done after {:.2f} seconds".format(time.time() - start_time))
 
         # calculate reference solution using igraph
         if create_mst:
+            start_time = time.time()
+            print("calculating mst...")
             g_mst_gt = calculate_mst(g)
             export_graph(g_mst_gt, f"{base_filename}_mst_gt.csv")
-
+            print("mst done after {:.2f} seconds".format(time.time() - start_time))
 
 
 if __name__ == "__main__":
-    print(common.WORKSPACE_DIR.parent)
-
-    graph_list = [
-        {"n_nodes": 10*1000, "connectivity": 1000, "w_min": 1, "w_max": 100},
-#        {"n_nodes": 100*1000, "connectivity": 10*1000, "w_min": 1, "w_max": 100},
-#        {"n_nodes": 1000*1000, "connectivity": 100*1000, "w_min": 1, "w_max": 100}
-    ]
-
-#    density_10perc = [
-#        {"n_nodes": 10*1000, "connectivity": 1000, "w_min": 1, "w_max": 100},
-#        {"n_nodes": 100*1000, "connectivity": 10*1000, "w_min": 1, "w_max": 100},
-#        {"n_nodes": 1000*1000, "connectivity": 100*1000, "w_min": 1, "w_max": 100}
-#    ]
 
 
-#    graph_list = [
-#        {"n_nodes": 9876, "connectivity": 321, "w_min": 1, "w_max": 100}
-#    ]
+    generate_connected_graph(3,5)
 
-    out_dir = common.INPUT_DATA_DIR / "tester"
-    create_graphs(graph_list, output_dir=out_dir)
+
+    #densities = [.01, .1, .25, .5, .75, .9, .99]
+    densities = [.5]
+    
+#    for d in densities: 
+#        graph_list = [
+#            {"n_edges": int(1e4), "density": d, "w_min": 1, "w_max": 1000},
+#            {"n_edges": int(3e4), "density": d, "w_min": 1, "w_max": 1000}
+#            {"n_edges": int(1e5), "density": d, "w_min": 1, "w_max": 1000},
+#            {"n_edges": int(3e5), "density": d, "w_min": 1, "w_max": 1000},
+#            {"n_edges": int(1e6), "density": d, "w_min": 1, "w_max": 1000},
+#            {"n_edges": int(3e6), "density": d, "w_min": 1, "w_max": 1000},
+#            {"n_edges": int(1e7), "density": d, "w_min": 1, "w_max": 1000},
+#            {"n_edges": int(3e7), "density": d, "w_min": 1, "w_max": 1000}
+#        ]
+#        out_dir = common.INPUT_DATA_DIR / "tester"
+#        create_graphs(graph_list, output_dir=out_dir)
+
+
+
