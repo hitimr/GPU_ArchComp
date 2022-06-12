@@ -21,6 +21,10 @@ void partition(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold, int 
     partition_inclusive_scan(E, E_leq, E_ge, threshold);
     break;
 
+  case PARTITION_KERNEL_STREAMS:
+    partition_streams_inclusive_scan(E, E_leq, E_ge, threshold);
+    break;
+
   default:
     throw std::invalid_argument("Unknown partition kernel");
   }
@@ -212,6 +216,122 @@ __global__ void create_partitioned_array(int *values, int *start, int *target, i
 }
 
 // void partition_inclusive_scan(E, E_leq, E_big, threshold)
+void partition_streams_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold)
+{
+  E.sync_hostToDevice();
+
+  size_t size = E.val.size();
+  int num_bytes = E.val.size() * sizeof(int);
+
+  // allocate
+  int *d_truth_small, *d_truth_big, *d_scanned_truth_small, *d_scanned_truth_big;
+  // cudaMalloc((void **)&d_E_val, num_bytes);
+  cudaMalloc((void **)&d_truth_small, num_bytes);
+  cudaMalloc((void **)&d_truth_big, num_bytes);
+  cudaMalloc((void **)&d_scanned_truth_small, num_bytes);
+  cudaMalloc((void **)&d_scanned_truth_big, num_bytes);
+
+  check_array<<<GRIDSIZE, BLOCKSIZE>>>(E.d_val, d_truth_small, d_truth_big, size, threshold);
+ 
+  int *carries;
+  cudaMalloc(&carries, sizeof(int) * GRIDSIZE);
+  int *carries1;
+  cudaMalloc(&carries1, sizeof(int) * GRIDSIZE);
+
+  int *d_E_leq_val, *d_E_leq_coo1, *d_E_leq_coo2, *d_E_ge_val, *d_E_ge_coo1, *d_E_ge_coo2;
+
+  int sum_smaller[1];
+  int sum_greater[1];
+
+  cudaEvent_t event_first_part;
+  cudaEventCreate (&event_first_part);
+
+  cudaEvent_t event_second_part;
+  cudaEventCreate (&event_second_part);
+
+  cudaStream_t streams[2];
+  cudaStreamCreate(&streams[0]);
+  cudaStreamCreate(&streams[1]);
+
+
+  // First step: Scan within each thread group and write carries
+  scan_kernel_1<<<GRIDSIZE, BLOCKSIZE, 0, streams[0]>>>(d_truth_small, d_scanned_truth_small, size, carries);
+  scan_kernel_2<<<GRIDSIZE, BLOCKSIZE, 0, streams[0]>>>(d_scanned_truth_small, size, carries);
+
+
+  cudaMemcpyAsync(sum_smaller, d_scanned_truth_small + size - 1, sizeof(int), cudaMemcpyDeviceToHost, streams[0]);
+
+  cudaEventRecord(event_first_part, streams[0]);
+
+  // Second step: Offset each thread group accordingly
+  scan_kernel_1<<<GRIDSIZE, BLOCKSIZE, 0, streams[1]>>>(d_truth_big, d_scanned_truth_big, size, carries1);
+  scan_kernel_2<<<GRIDSIZE, BLOCKSIZE, 0, streams[1]>>>(d_scanned_truth_big, size, carries1);
+
+  cudaStreamWaitEvent ( streams[1], event_first_part );
+
+  cudaMemcpyAsync(sum_greater, d_scanned_truth_big + size - 1, sizeof(int), cudaMemcpyDeviceToHost, streams[1]);
+
+  cudaStreamSynchronize(streams[0]);
+
+  E_leq.resize_and_set_num_edges(sum_smaller[0]);
+
+  cudaMalloc((void **)&d_E_leq_val, sizeof(int) * sum_smaller[0]);
+  cudaMalloc((void **)&d_E_leq_coo1, sizeof(int) * sum_smaller[0]);
+  cudaMalloc((void **)&d_E_leq_coo2, sizeof(int) * sum_smaller[0]);
+
+
+  cudaStreamSynchronize(streams[1]);
+  E_ge.resize_and_set_num_edges(sum_greater[0]);
+
+
+  cudaMalloc((void **)&d_E_ge_val, sizeof(int) * sum_greater[0]);
+  cudaMalloc((void **)&d_E_ge_coo1, sizeof(int) * sum_greater[0]);
+  cudaMalloc((void **)&d_E_ge_coo2, sizeof(int) * sum_greater[0]);
+
+
+  create_partitioned_array<<<GRIDSIZE, BLOCKSIZE, 0, streams[0]>>>(E.d_val, E.d_coo1, E.d_coo2, d_truth_small,
+                                                    d_scanned_truth_small, d_E_leq_val,
+                                                    d_E_leq_coo1, d_E_leq_coo2, size);
+
+
+  cudaMemcpyAsync(E_leq.val.data(), d_E_leq_val, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost, streams[0]);
+  cudaMemcpyAsync(E_leq.coo1.data(), d_E_leq_coo1, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost, streams[0]);
+  cudaMemcpyAsync(E_leq.coo2.data(), d_E_leq_coo2, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost, streams[0]);
+
+  cudaEventRecord(event_second_part, streams[0]);
+
+
+  
+  create_partitioned_array<<<GRIDSIZE, BLOCKSIZE, 0, streams[1]>>>(E.d_val, E.d_coo1, E.d_coo2, d_truth_big,
+                                                    d_scanned_truth_big, d_E_ge_val, d_E_ge_coo1,
+                                                    d_E_ge_coo2, size);
+
+  cudaStreamWaitEvent ( streams[1], event_second_part );
+
+
+
+  cudaMemcpyAsync(E_ge.val.data(), d_E_ge_val, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost, streams[1]);
+  cudaMemcpyAsync(E_ge.coo1.data(), d_E_ge_coo1, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost, streams[1]);
+  cudaMemcpyAsync(E_ge.coo2.data(), d_E_ge_coo2, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost, streams[1]);
+
+  cudaStreamDestroy(streams[0]);
+  cudaStreamDestroy(streams[1]);
+
+  cudaFree(carries);
+  cudaFree(carries1);
+
+  cudaFree(d_E_leq_val);
+  cudaFree(d_E_leq_coo1);
+  cudaFree(d_E_leq_coo2);
+  cudaFree(d_E_ge_val);
+  cudaFree(d_E_ge_coo1);
+  cudaFree(d_E_ge_coo2);
+  cudaFree(d_truth_small);
+  cudaFree(d_truth_big);
+  cudaFree(d_scanned_truth_small);
+  cudaFree(d_scanned_truth_big);
+}
+
 void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold)
 {
   E.sync_hostToDevice();
