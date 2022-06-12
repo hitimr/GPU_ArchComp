@@ -10,16 +10,6 @@ import common
 
 
 
-def generate_connected_graph(n_nodes, n_edges, w_min=0, w_max=100, random_seed=0):
-    random.seed(random_seed)
-    print("generate graph called")
-    print("random number: ", random.randrange(n_nodes))
-
-
-    pass
-
-
-
 # Generate a random, connected graph using Barabasi algorithm
 # Edges are bidirectional with random weights
 
@@ -110,14 +100,14 @@ def create_graphs(graph_list, output_dir=common.INPUT_DATA_DIR, create_mst=True)
 #        print(graph["n_nodes"])
 
         base_filename = output_dir / \
-        f"barabasi_{graph['n_edges']}_{graph['density']}" 
+        f"barabasi_{graph['n_nodes']}_{graph['connectivity']}" 
 
         # generate Connected, weithed graph
-        print("generating graph... n_edges: {:.1e}, density: {:.3f}".format(graph['n_edges'], graph['density']))
+        print("generating graph... n_nodes: {:.1e}, connectivity: {:.3e}".format(graph['n_nodes'], graph['connectivity']))
         start_time = time.time()
-        n_nodes, connectivity = graph_stats(graph['n_edges'], graph['density'])
-        print("settling for n_nodes: {}, connectivity: {}, n_edges: {:.3e}".format(n_nodes, connectivity, n_nodes*connectivity))
-        g = generate_graph(n_nodes, connectivity, w_min=graph['w_min'], w_max=graph['w_max'])
+        #n_nodes, connectivity = graph_stats(graph['n_edges'], graph['density'])
+        #print("settling for n_nodes: {}, connectivity: {}, n_edges: {:.3e}".format(n_nodes, connectivity, n_nodes*connectivity))
+        g = generate_graph(graph['n_nodes'], graph['connectivity'], w_min=graph['w_min'], w_max=graph['w_max'])
         print("graph generated in {:.2f} seconds".format(time.time() - start_time))
 
         # save graph and mst to file
@@ -136,16 +126,26 @@ def create_graphs(graph_list, output_dir=common.INPUT_DATA_DIR, create_mst=True)
 
 if __name__ == "__main__":
 
-
-    generate_connected_graph(3,5)
-
-
     #densities = [.01, .1, .25, .5, .75, .9, .99]
-    densities = [.5]
-    
-#    for d in densities: 
-#        graph_list = [
-#            {"n_edges": int(1e4), "density": d, "w_min": 1, "w_max": 1000},
+    # densities = [.5]
+    #c_facs = [.052,.054,.056,.058]
+    #c_facs = [.292,.294,.296,.298]
+    #connectivities = [60,70,80,90,100]  
+    connectivities = [1]  
+
+    #c_facs = [.053]
+    c_facs = [.293]
+
+    for f in c_facs: 
+        graph_list = [
+            {"n_nodes": 100, "connectivity": int(f*100), "w_min": 1, "w_max": 1000},
+            {"n_nodes": 200, "connectivity": int(f*200), "w_min": 1, "w_max": 1000},
+            {"n_nodes": 400, "connectivity": int(f*400), "w_min": 1, "w_max": 1000},
+            {"n_nodes": 800, "connectivity": int(f*800), "w_min": 1, "w_max": 1000}
+#            {"n_nodes": 1600, "connectivity": int(f*1600), "w_min": 1, "w_max": 1000},
+#            {"n_nodes": 3200, "connectivity": int(f*3200), "w_min": 1, "w_max": 1000},
+#            {"n_nodes": 6400, "connectivity": int(f*6400), "w_min": 1, "w_max": 1000}
+#            {"n_nodes": 3200, "connectivity": int(c_fac*3200), "w_min": 1, "w_max": 1000},
 #            {"n_edges": int(3e4), "density": d, "w_min": 1, "w_max": 1000}
 #            {"n_edges": int(1e5), "density": d, "w_min": 1, "w_max": 1000},
 #            {"n_edges": int(3e5), "density": d, "w_min": 1, "w_max": 1000},
@@ -153,9 +153,10 @@ if __name__ == "__main__":
 #            {"n_edges": int(3e6), "density": d, "w_min": 1, "w_max": 1000},
 #            {"n_edges": int(1e7), "density": d, "w_min": 1, "w_max": 1000},
 #            {"n_edges": int(3e7), "density": d, "w_min": 1, "w_max": 1000}
-#        ]
+        ]
 #        out_dir = common.INPUT_DATA_DIR / "tester"
-#        create_graphs(graph_list, output_dir=out_dir)
+        out_dir = common.WORKSPACE_DIR / "benchmark_data"
+        create_graphs(graph_list, output_dir=out_dir, create_mst=False)
 
 
 
