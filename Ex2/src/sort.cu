@@ -433,7 +433,7 @@ __global__ void first_stage(int* in, int* out, int size,
   if (threadIdx.x == 0)
   {
     int run_sum = 0;
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < SPLIT_SIZE; ++i)
     {
       scan_sums[i] = run_sum;
       run_sum += masks_sums[i];
@@ -501,7 +501,6 @@ void radix_sort(EdgeList &E)
   E.sync_hostToDevice();
 
   int size = E.size();
-  int split_size = 4;
 
   // int *cuda_in;
   int *cuda_out;
@@ -530,12 +529,12 @@ void radix_sort(EdgeList &E)
   cudaMalloc(&cuda_prefix_sums, sizeof(int) * size);
   cudaMemset(cuda_prefix_sums, 0, sizeof(int) * size);
 
-  cudaMalloc(&cuda_block_sums, sizeof(int) * split_size * grid_size);
-  cudaMemset(cuda_block_sums, 0, sizeof(int) * split_size * grid_size);
-  cudaMalloc(&cuda_scan_block_sums, sizeof(int) * split_size * grid_size);
-  cudaMemset(cuda_scan_block_sums, 0, sizeof(int) * split_size * grid_size);
+  cudaMalloc(&cuda_block_sums, sizeof(int) * SPLIT_SIZE * grid_size);
+  cudaMemset(cuda_block_sums, 0, sizeof(int) * SPLIT_SIZE * grid_size);
+  cudaMalloc(&cuda_scan_block_sums, sizeof(int) * SPLIT_SIZE * grid_size);
+  cudaMemset(cuda_scan_block_sums, 0, sizeof(int) * SPLIT_SIZE * grid_size);
 
-  int memory_size = (6 * BLOCK_SIZE + 2 * split_size) * sizeof(int);
+  int memory_size = (6 * BLOCK_SIZE + 2 * SPLIT_SIZE) * sizeof(int);
 
   for (int current_bits = 0; current_bits <= 30; current_bits += 2)
   {
@@ -546,7 +545,7 @@ void radix_sort(EdgeList &E)
                                                           cuda_block_sums, 
                                                           current_bits
                                                       );
-      scan(cuda_block_sums, cuda_scan_block_sums, split_size * grid_size);
+      scan(cuda_block_sums, cuda_scan_block_sums, SPLIT_SIZE * grid_size);
 
 
       final_sort<<<grid_size, BLOCK_SIZE>>>(cuda_out, E.d_val, size,
