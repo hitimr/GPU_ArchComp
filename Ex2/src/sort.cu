@@ -549,7 +549,7 @@ void radix_sort(EdgeList &E)
       scan(cuda_block_sums, cuda_scan_block_sums, split_size * grid_size);
 
 
-      final_sort<<<grid_size, BLOCK_SIZE>>>(cuda_out, cuda_in, size,
+      final_sort<<<grid_size, BLOCK_SIZE>>>(cuda_out, E.d_val, size,
                                           cuda_ind_tmp, cuda_ind_vec,
                                           cuda_prefix_sums, 
                                           cuda_scan_block_sums, 
