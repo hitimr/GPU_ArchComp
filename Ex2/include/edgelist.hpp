@@ -101,6 +101,8 @@ public:
 
   void write_to_file(std::string file_name)
   {
+    sync_deviceToHost();
+
     std::ofstream file;
     file.open(file_name);
     if (!file.is_open())
@@ -126,10 +128,10 @@ public:
   // append a new edge to the edgelist
   void append_edge(int source, int target, int weight)
   {
-    sync_deviceToHost();
+    // sync_deviceToHost();
     val[num_edges] = weight;
-    coo1[num_edges] = weight;
-    coo2[num_edges] = weight;
+    coo1[num_edges] = source;
+    coo2[num_edges] = target;
     num_edges += 1;
   }
 
@@ -160,16 +162,16 @@ public:
   size_t size() const { return num_edges; }
 
   // TODO: make private and create getter functions
-  size_t num_nodes;
-  size_t num_edges;
+  size_t num_nodes = 0;
+  size_t num_edges = 0;
   int direction;
   int owner = HOST;
   bool m_use_pinned_memory = false;
 
   // CPU Data
-  int *coo1;
-  int *coo2;
-  int *val;
+  int *coo1 = nullptr;
+  int *coo2 = nullptr;
+  int *val = nullptr;
 
   // GPU Data
   int *d_coo1 = nullptr;
