@@ -64,6 +64,7 @@ void filter(EdgeList &E, UnionFind &P, int kernel)
 void partition_cpu_naive(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold)
 {
   E.sync_deviceToHost();
+
   // allocate both to max size so vectors dont grow
   size_t max_size = E.size();
   E_leq.reserve(max_size);
