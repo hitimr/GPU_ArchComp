@@ -1,15 +1,14 @@
 #include "common.hpp"
 #include "edgelist.hpp"
-#include "sort.hpp"
 #include "misc.hpp"
+#include "partition.hpp"
 
 #include <cassert>
 #include <numeric>
 #include <stdio.h>
 #include <stdlib.h>
 
-#define TEST_SIZE (int)1e6
-#define TEST_SIZE_BUBBLE_SORT (int)1e3
+#define TEST_SIZE (int)1e5
 
 Benchmarker g_benchmarker;
 OptionsT g_options;
@@ -28,18 +27,11 @@ void swap(EdgeList &E, int i, int j)
   E.coo2[j] = edge_i.target;
 }
 
-void test_sort_kernel(int kernel)
+void test_partition_kernel(int kernel)
 {
-  EdgeList E;
+  EdgeList E, E_leq, E_big;
 
-  if (kernel == SORT_KERNEL_GPU_BUBBLE_MULT)
-  {
-    E.resize_and_set_num_edges(TEST_SIZE_BUBBLE_SORT);
-  }
-  else
-  {
-    E.resize_and_set_num_edges(TEST_SIZE);
-  }
+  E.resize_and_set_num_edges(TEST_SIZE);
 
   // Fill EdgeList with 1,2,3...
   std::iota(&E.coo1[0], &E.coo1[E.size()], 0);
@@ -56,16 +48,22 @@ void test_sort_kernel(int kernel)
     swap(E, i, j);
   }
 
-  sort_edgelist(E, kernel);
+  int thresh = E.size() / 2;
+  partition(E, E_leq, E_big, thresh, kernel);
   E.sync_deviceToHost();
 
   // verify
-  for (size_t i = 0; i < E.size(); i++)
+  for (size_t i = 0; i < E_leq.size(); i++)
   {
-    assert(E.coo1[i] == i);
-    assert(E.coo2[i] == i);
-    assert(E.val[i] == i);
+    assert(E_leq.val[i] <= thresh);
   }
+
+  for (size_t i = 0; i < E_big.size(); i++)
+  {
+    assert(E_big.val[i] > thresh);
+  }
+
+  assert(E_big.size() + E_leq.size() == E.size());
 
   return;
 }
@@ -76,12 +74,12 @@ int main(int ac, char **av)
   // po::store(po::parse_command_line(ac, av), options);
   g_options = misc::parse_options(ac, av);
 
-  std::vector<int> kernels = {SORT_KERNEL_GPU_BUBBLE_MULT, SORT_KERNEL_MERGE_SORT,
-                              SORT_KERNEL_THRUST, SORT_KERNEL_RADIX};
+  std::vector<int> kernels = {PARTITION_KERNEL_CPU_NAIVE, PARTITION_KERNEL_GPU,
+                              PARTITION_KERNEL_STREAMS, PARTITION_KERNEL_THRUST};
 
   for (auto kernel : kernels)
   {
-    test_sort_kernel(kernel);
+    test_partition_kernel(kernel);
     std::cout << "Kernel " << kernel << "/" << kernels.size() << " passed" << std::endl;
   }
 

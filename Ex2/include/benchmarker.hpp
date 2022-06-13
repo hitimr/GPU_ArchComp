@@ -85,7 +85,8 @@ public:
     {
       auto tag = itr->first;
       std::cout << tag << "\tµ=" << average(tag) << "s\tsigma=" << std_deviation(tag)
-                << "s\ttotal=" << sum(tag) << "\tnum_calls=" << num_calls(tag) << std::endl;
+                << "s\tmedian=" << median(tag) << "s\ttotal=" << sum(tag)
+                << "\tnum_calls=" << num_calls(tag) << std::endl;
     }
   }
 
@@ -99,7 +100,7 @@ public:
     }
 
     // Header
-    file << "tag;average;std_dev;total;num_calls" << std::endl;
+    file << "tag;average;std_dev;median;total;num_calls" << std::endl;
 
     // Data
     for (auto itr = timings.begin(); itr != timings.end(); itr++)
@@ -109,6 +110,7 @@ public:
       file  << tag << ";" 
             << average(tag) << ";" 
             << std_deviation(tag) << ";"
+            << median(tag) << ";"
             << sum(tag) << ";"
             << num_calls(tag) << std::endl;
       // clang-format on
@@ -121,6 +123,14 @@ public:
 
   // return the average time of a given tag
   double average(std::string tag) { return sum(tag) / (double)timings[tag].size(); }
+
+  double median(std::string tag)
+  {
+    auto data = timings[tag];
+    auto itr = data.begin();
+    std::advance(itr, data.size() / 2);
+    return *itr;
+  }
 
   // return the standard deviation of a given tag
   double std_deviation(std::string tag)

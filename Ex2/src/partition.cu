@@ -25,6 +25,10 @@ void partition(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold, int 
     partition_streams_inclusive_scan(E, E_leq, E_ge, threshold);
     break;
 
+  case PARTITION_KERNEL_THRUST:
+    partition_thrust(E, E_leq, E_ge, threshold);
+    break;
+
   default:
     throw std::invalid_argument("Unknown partition kernel");
   }
@@ -44,6 +48,10 @@ void filter(EdgeList &E, UnionFind &P, int kernel)
 
   case FILTER_KERNEL_GPU:
     filter_gpu_naive(E, P);
+    break;
+
+  case FILTER_KERNEL_THRUST:
+    filter_thrust(E, P);
     break;
 
   default:
@@ -220,8 +228,8 @@ void partition_streams_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_
 {
   E.sync_hostToDevice();
 
-  size_t size = E.val.size();
-  int num_bytes = E.val.size() * sizeof(int);
+  size_t size = E.size();
+  int num_bytes = E.size() * sizeof(int);
 
   // allocate
   int *d_truth_small, *d_truth_big, *d_scanned_truth_small, *d_scanned_truth_big;
@@ -232,7 +240,7 @@ void partition_streams_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_
   cudaMalloc((void **)&d_scanned_truth_big, num_bytes);
 
   check_array<<<GRIDSIZE, BLOCKSIZE>>>(E.d_val, d_truth_small, d_truth_big, size, threshold);
- 
+
   int *carries;
   cudaMalloc(&carries, sizeof(int) * GRIDSIZE);
   int *carries1;
@@ -244,32 +252,34 @@ void partition_streams_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_
   int sum_greater[1];
 
   cudaEvent_t event_first_part;
-  cudaEventCreate (&event_first_part);
+  cudaEventCreate(&event_first_part);
 
   cudaEvent_t event_second_part;
-  cudaEventCreate (&event_second_part);
+  cudaEventCreate(&event_second_part);
 
   cudaStream_t streams[2];
   cudaStreamCreate(&streams[0]);
   cudaStreamCreate(&streams[1]);
 
-
   // First step: Scan within each thread group and write carries
-  scan_kernel_1<<<GRIDSIZE, BLOCKSIZE, 0, streams[0]>>>(d_truth_small, d_scanned_truth_small, size, carries);
+  scan_kernel_1<<<GRIDSIZE, BLOCKSIZE, 0, streams[0]>>>(d_truth_small, d_scanned_truth_small, size,
+                                                        carries);
   scan_kernel_2<<<GRIDSIZE, BLOCKSIZE, 0, streams[0]>>>(d_scanned_truth_small, size, carries);
 
-
-  cudaMemcpyAsync(sum_smaller, d_scanned_truth_small + size - 1, sizeof(int), cudaMemcpyDeviceToHost, streams[0]);
+  cudaMemcpyAsync(sum_smaller, d_scanned_truth_small + size - 1, sizeof(int),
+                  cudaMemcpyDeviceToHost, streams[0]);
 
   cudaEventRecord(event_first_part, streams[0]);
 
   // Second step: Offset each thread group accordingly
-  scan_kernel_1<<<GRIDSIZE, BLOCKSIZE, 0, streams[1]>>>(d_truth_big, d_scanned_truth_big, size, carries1);
+  scan_kernel_1<<<GRIDSIZE, BLOCKSIZE, 0, streams[1]>>>(d_truth_big, d_scanned_truth_big, size,
+                                                        carries1);
   scan_kernel_2<<<GRIDSIZE, BLOCKSIZE, 0, streams[1]>>>(d_scanned_truth_big, size, carries1);
 
-  cudaStreamWaitEvent ( streams[1], event_first_part );
+  cudaStreamWaitEvent(streams[1], event_first_part);
 
-  cudaMemcpyAsync(sum_greater, d_scanned_truth_big + size - 1, sizeof(int), cudaMemcpyDeviceToHost, streams[1]);
+  cudaMemcpyAsync(sum_greater, d_scanned_truth_big + size - 1, sizeof(int), cudaMemcpyDeviceToHost,
+                  streams[1]);
 
   cudaStreamSynchronize(streams[0]);
 
@@ -279,40 +289,38 @@ void partition_streams_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_
   cudaMalloc((void **)&d_E_leq_coo1, sizeof(int) * sum_smaller[0]);
   cudaMalloc((void **)&d_E_leq_coo2, sizeof(int) * sum_smaller[0]);
 
-
   cudaStreamSynchronize(streams[1]);
   E_ge.resize_and_set_num_edges(sum_greater[0]);
-
 
   cudaMalloc((void **)&d_E_ge_val, sizeof(int) * sum_greater[0]);
   cudaMalloc((void **)&d_E_ge_coo1, sizeof(int) * sum_greater[0]);
   cudaMalloc((void **)&d_E_ge_coo2, sizeof(int) * sum_greater[0]);
 
+  create_partitioned_array<<<GRIDSIZE, BLOCKSIZE, 0, streams[0]>>>(
+      E.d_val, E.d_coo1, E.d_coo2, d_truth_small, d_scanned_truth_small, d_E_leq_val, d_E_leq_coo1,
+      d_E_leq_coo2, size);
 
-  create_partitioned_array<<<GRIDSIZE, BLOCKSIZE, 0, streams[0]>>>(E.d_val, E.d_coo1, E.d_coo2, d_truth_small,
-                                                    d_scanned_truth_small, d_E_leq_val,
-                                                    d_E_leq_coo1, d_E_leq_coo2, size);
-
-
-  cudaMemcpyAsync(E_leq.val.data(), d_E_leq_val, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost, streams[0]);
-  cudaMemcpyAsync(E_leq.coo1.data(), d_E_leq_coo1, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost, streams[0]);
-  cudaMemcpyAsync(E_leq.coo2.data(), d_E_leq_coo2, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost, streams[0]);
+  cudaMemcpyAsync(E_leq.val, d_E_leq_val, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost,
+                  streams[0]);
+  cudaMemcpyAsync(E_leq.coo1, d_E_leq_coo1, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost,
+                  streams[0]);
+  cudaMemcpyAsync(E_leq.coo2, d_E_leq_coo2, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost,
+                  streams[0]);
 
   cudaEventRecord(event_second_part, streams[0]);
 
+  create_partitioned_array<<<GRIDSIZE, BLOCKSIZE, 0, streams[1]>>>(
+      E.d_val, E.d_coo1, E.d_coo2, d_truth_big, d_scanned_truth_big, d_E_ge_val, d_E_ge_coo1,
+      d_E_ge_coo2, size);
 
-  
-  create_partitioned_array<<<GRIDSIZE, BLOCKSIZE, 0, streams[1]>>>(E.d_val, E.d_coo1, E.d_coo2, d_truth_big,
-                                                    d_scanned_truth_big, d_E_ge_val, d_E_ge_coo1,
-                                                    d_E_ge_coo2, size);
+  cudaStreamWaitEvent(streams[1], event_second_part);
 
-  cudaStreamWaitEvent ( streams[1], event_second_part );
-
-
-
-  cudaMemcpyAsync(E_ge.val.data(), d_E_ge_val, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost, streams[1]);
-  cudaMemcpyAsync(E_ge.coo1.data(), d_E_ge_coo1, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost, streams[1]);
-  cudaMemcpyAsync(E_ge.coo2.data(), d_E_ge_coo2, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost, streams[1]);
+  cudaMemcpyAsync(E_ge.val, d_E_ge_val, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost,
+                  streams[1]);
+  cudaMemcpyAsync(E_ge.coo1, d_E_ge_coo1, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost,
+                  streams[1]);
+  cudaMemcpyAsync(E_ge.coo2, d_E_ge_coo2, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost,
+                  streams[1]);
 
   cudaStreamDestroy(streams[0]);
   cudaStreamDestroy(streams[1]);
@@ -336,8 +344,8 @@ void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int 
 {
   E.sync_hostToDevice();
 
-  size_t size = E.val.size();
-  int num_bytes = E.val.size() * sizeof(int);
+  size_t size = E.size();
+  int num_bytes = E.size() * sizeof(int);
 
   // allocate
   int *d_truth_small, *d_truth_big, *d_scanned_truth_small, *d_scanned_truth_big;
@@ -377,13 +385,13 @@ void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int 
                                                     d_scanned_truth_big, d_E_ge_val, d_E_ge_coo1,
                                                     d_E_ge_coo2, size);
 
-  cudaMemcpy(E_leq.val.data(), d_E_leq_val, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(E_leq.coo1.data(), d_E_leq_coo1, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(E_leq.coo2.data(), d_E_leq_coo2, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_leq.val, d_E_leq_val, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_leq.coo1, d_E_leq_coo1, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_leq.coo2, d_E_leq_coo2, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
 
-  cudaMemcpy(E_ge.val.data(), d_E_ge_val, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(E_ge.coo1.data(), d_E_ge_coo1, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(E_ge.coo2.data(), d_E_ge_coo2, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_ge.val, d_E_ge_val, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_ge.coo1, d_E_ge_coo1, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost);
+  cudaMemcpy(E_ge.coo2, d_E_ge_coo2, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost);
 
   // cudaFree(d_E_val);
   cudaFree(d_E_leq_val);
@@ -408,7 +416,7 @@ void filter_cpu_naive(EdgeList &E, UnionFind &P)
   for (size_t i = 0; i < E.size(); i++)
   {
     Edge e = E[i];
-    if (P.find(e.source) != P.find(e.target))
+    if (P.find_and_compress(e.source) != P.find_and_compress(e.target))
     {
       E_filt.append_edge(e);
     }
@@ -462,8 +470,8 @@ void filter_gpu_naive(EdgeList &E, UnionFind &P)
   E.sync_hostToDevice();
   EdgeList E_new;
 
-  size_t size = E.val.size();
-  int num_bytes = E.val.size() * sizeof(int);
+  size_t size = E.size();
+  int num_bytes = E.size() * sizeof(int);
 
   int num_bytes_parents = P.parent.size() * sizeof(int);
 
@@ -494,10 +502,123 @@ void filter_gpu_naive(EdgeList &E, UnionFind &P)
   // cudaMemcpy(E_new.val.data(), d_E_new_val, sizeof(int) * sum[0], cudaMemcpyDeviceToHost);
   // cudaMemcpy(E_new.coo1.data(), d_E_new_coo1, sizeof(int) * sum[0], cudaMemcpyDeviceToHost);
   // cudaMemcpy(E_new.coo2.data(), d_E_new_coo2, sizeof(int) * sum[0], cudaMemcpyDeviceToHost);
-  //E_new.sync_deviceToHost();
+  // E_new.sync_deviceToHost();
 
   cudaFree(d_truth);
   cudaFree(d_scanned_truth);
+
+  E = E_new;
+}
+
+// condition for partitioning with thrust
+struct is_less_equal
+{
+  int threshold;
+  is_less_equal(int t) : threshold(t) {}
+
+  __host__ __device__ bool operator()(const int &x) { return x <= threshold; }
+};
+
+struct is_greater
+{
+  int threshold;
+  is_greater(int t) : threshold(t) {}
+
+  __host__ __device__ bool operator()(const int &x) { return x > threshold; }
+};
+
+void partition_thrust(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold)
+{
+
+  E.sync_hostToDevice();
+  size_t size_E = E.size();
+
+  thrust::device_ptr<int> ptr_E_d_val(&E.d_val[0]);
+  thrust::device_ptr<int> ptr_E_d_coo1(&E.d_coo1[0]);
+  thrust::device_ptr<int> ptr_E_d_coo2(&E.d_coo2[0]);
+
+  int size_smaller =
+      thrust::count_if(thrust::device, ptr_E_d_val, ptr_E_d_val + size_E, is_less_equal(threshold));
+  int size_bigger = size_E - size_smaller;
+
+  E_leq.resize_and_set_num_edges(size_smaller);
+  E_ge.resize_and_set_num_edges(size_bigger);
+
+  E_leq.sync_hostToDevice();
+  E_ge.sync_hostToDevice();
+
+  thrust::device_ptr<int> ptr_E_leq_d_val(&E_leq.d_val[0]);
+  thrust::device_ptr<int> ptr_E_leq_d_coo1(&E_leq.d_coo1[0]);
+  thrust::device_ptr<int> ptr_E_leq_d_coo2(&E_leq.d_coo2[0]);
+
+  thrust::copy_if(thrust::device, ptr_E_d_val, ptr_E_d_val + size_E, ptr_E_d_val, ptr_E_leq_d_val,
+                  is_less_equal(threshold));
+  thrust::copy_if(thrust::device, ptr_E_d_coo1, ptr_E_d_coo1 + size_E, ptr_E_d_val,
+                  ptr_E_leq_d_coo1, is_less_equal(threshold));
+  thrust::copy_if(thrust::device, ptr_E_d_coo2, ptr_E_d_coo2 + size_E, ptr_E_d_val,
+                  ptr_E_leq_d_coo2, is_less_equal(threshold));
+  E_leq.sync_deviceToHost();
+
+  thrust::device_ptr<int> ptr_E_ge_d_val(&E_ge.d_val[0]);
+  thrust::device_ptr<int> ptr_E_ge_d_coo1(&E_ge.d_coo1[0]);
+  thrust::device_ptr<int> ptr_E_ge_d_coo2(&E_ge.d_coo2[0]);
+
+  thrust::copy_if(thrust::device, ptr_E_d_val, ptr_E_d_val + size_E, ptr_E_d_val, ptr_E_ge_d_val,
+                  is_greater(threshold));
+  thrust::copy_if(thrust::device, ptr_E_d_coo1, ptr_E_d_coo1 + size_E, ptr_E_d_val, ptr_E_ge_d_coo1,
+                  is_greater(threshold));
+  thrust::copy_if(thrust::device, ptr_E_d_coo2, ptr_E_d_coo2 + size_E, ptr_E_d_val, ptr_E_ge_d_coo2,
+                  is_greater(threshold));
+  E_ge.sync_deviceToHost();
+}
+
+struct is_valid
+{
+  __host__ __device__ bool operator()(const int &x) { return x; }
+};
+
+void filter_thrust(EdgeList &E, UnionFind &P)
+{
+  E.sync_hostToDevice();
+  EdgeList E_new;
+
+  size_t size = E.size();
+  int num_bytes = E.size() * sizeof(int);
+
+  thrust::device_ptr<int> ptr_E_d_val(&E.d_val[0]);
+  thrust::device_ptr<int> ptr_E_d_coo1(&E.d_coo1[0]);
+  thrust::device_ptr<int> ptr_E_d_coo2(&E.d_coo2[0]);
+
+  int num_bytes_parents = P.parent.size() * sizeof(int);
+
+  // allocate
+  int *d_truth, *d_parents;
+  cudaMalloc((void **)&d_truth, num_bytes);
+  thrust::device_ptr<int> ptr_d_truth(&d_truth[0]);
+  cudaMalloc((void **)&d_parents, num_bytes_parents);
+
+  cudaMemcpy(d_parents, P.parent.data(), num_bytes_parents, cudaMemcpyHostToDevice);
+
+  check_array_filter<<<GRIDSIZE, BLOCKSIZE>>>(d_parents, E.d_coo1, E.d_coo2, d_truth, size);
+
+  int size_E_new = thrust::count_if(thrust::device, ptr_d_truth, ptr_d_truth + size, is_valid());
+
+  // reserve some space here for leq and ge vectors
+  E_new.resize_and_set_num_edges(size_E_new);
+  E_new.set_owner(DEVICE);
+
+  thrust::device_ptr<int> ptr_E_new_d_val(&E_new.d_val[0]);
+  thrust::device_ptr<int> ptr_E_new_d_coo1(&E_new.d_coo1[0]);
+  thrust::device_ptr<int> ptr_E_new_d_coo2(&E_new.d_coo2[0]);
+
+  thrust::copy_if(thrust::device, ptr_E_d_val, ptr_E_d_val + size, ptr_d_truth, ptr_E_new_d_val,
+                  is_valid());
+  thrust::copy_if(thrust::device, ptr_E_d_coo1, ptr_E_d_coo1 + size, ptr_d_truth, ptr_E_new_d_coo1,
+                  is_valid());
+  thrust::copy_if(thrust::device, ptr_E_d_coo2, ptr_E_d_coo2 + size, ptr_d_truth, ptr_E_new_d_coo2,
+                  is_valid());
+
+  cudaFree(d_truth);
 
   E = E_new;
 }

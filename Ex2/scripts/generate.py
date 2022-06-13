@@ -2,12 +2,13 @@ import numpy as np
 import pandas as pd
 import igraph as ig
 import time
+import math
 
 import common
 
+
 # Generate a random, connected graph using Barabasi algorithm
 # Edges are bidirectional with random weights
-
 
 def generate_graph(n_nodes: int, connectivity: int, w_min=0, w_max=100):
     """_summary_
@@ -110,17 +111,29 @@ def create_graphs(graph_list, output_dir=common.INPUT_DATA_DIR, create_mst=True)
 
 '''
 if __name__ == "__main__":
-    n_nodes = 500000
-    connectivity = 1000
 
-    base_filename = common.INPUT_DATA_DIR / \
-        f"barabasi_{n_nodes}_{connectivity}"
+    d_fac = {"10pct": .053, "50pct": .293, "90pct": .684} # these factors will create the desired densities
 
-    # generate Connected, weithed graph
-    g = generate_graph(n_nodes=n_nodes, connectivity=3)
+    ranges = {"10pct": [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600],
+              "50pct": [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800],
+              "90pct": [25, 50, 100, 200, 400, 800, 1600, 3200, 6400]    
+             }
 
-    # calculate reference solution using igraph
-    g_mst_gt = calculate_mst(g)
+    #for key in d_fac:
+    for key in ['90pct']:
+        print("density: ", key)
+        graph_list = []
+        for r in ranges[key]:
+            graph_list.append({"n_nodes": r, "connectivity": int(d_fac[key]*r), "w_min": 1, "w_max": 1000, 'density': key})
+        print('list of graphs to be created:')
+        for graph in graph_list:
+            print(graph)
+        print('')
+
+        out_dir = common.WORKSPACE_DIR / "benchmark_data"
+        print('creating graphs: ')
+        create_graphs(graph_list, output_dir=out_dir, create_mst=True)
+
 
     # save graph and mst to file
     export_graph(g, f"{base_filename}.csv")

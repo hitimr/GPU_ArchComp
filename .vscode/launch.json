@@ -40,7 +40,7 @@
             "name": "Debug Test",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Ex2/build/test/test_sort",
+            "program": "${workspaceFolder}/Ex2/build/test/test_partition",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

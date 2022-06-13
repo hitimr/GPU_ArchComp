@@ -27,8 +27,7 @@
 void sort_edgelist(EdgeList &E, int kernel)
 {
   g_benchmarker.start("sort()");
-
-  E.sync_deviceToHost();
+  E.sync_deviceToHost();  // TODO: remove before release
 
   switch (kernel)
   {
@@ -41,7 +40,7 @@ void sort_edgelist(EdgeList &E, int kernel)
     break;
 
   case SORT_KERNEL_THRUST:
-    gpu_thrust_sort_three(E.val, E.coo1, E.coo2);
+    gpu_thrust_sort_three(E);
     break;
 
   case SORT_KERNEL_RADIX:
@@ -55,16 +54,16 @@ void sort_edgelist(EdgeList &E, int kernel)
   g_benchmarker.stop("sort()");
 }
 
-void gpu_thrust_sort_three(std::vector<int> &vec, std::vector<int> &vec1, std::vector<int> &vec2)
+void gpu_thrust_sort_three(EdgeList &E)
 {
+  // TODO: initialize Thrust DS on GPU
+  size_t size = E.size();
+  int num_bytes = E.size() * sizeof(int);
 
-  size_t size = vec.size();
-  int num_bytes = vec.size() * sizeof(int);
-
-  thrust::host_vector<int> h_vec = vec;
+  thrust::host_vector<int> h_vec(E.val, E.val + E.size());
   thrust::device_vector<int> d_vec = h_vec;
 
-  thrust::host_vector<int> h_ind_vec = vec;
+  thrust::host_vector<int> h_ind_vec(E.val, E.val + E.size());
   thrust::device_vector<int> d_ind_vec = h_ind_vec;
   thrust::sequence(h_ind_vec.begin(), h_ind_vec.end());
 
@@ -73,19 +72,19 @@ void gpu_thrust_sort_three(std::vector<int> &vec, std::vector<int> &vec1, std::v
   thrust::sort_by_key(d_vec.begin(), d_vec.end(), d_ind_vec.begin());
 
   thrust::copy(d_vec.begin(), d_vec.end(), h_vec.begin());
-  thrust::copy(h_vec.begin(), h_vec.end(), vec.begin());
+  thrust::copy(h_vec.begin(), h_vec.end(), E.val);
 
   std::vector<int> indices(size);
   thrust::copy(d_ind_vec.begin(), d_ind_vec.end(), h_ind_vec.begin());
   thrust::copy(h_ind_vec.begin(), h_ind_vec.end(), indices.begin());
+  E.set_owner(HOST);
 
-  std::vector<int> tmp_vec1, tmp_vec2;
-  tmp_vec1 = vec1;
-  tmp_vec2 = vec2;
+  std::vector<int> tmp_vec1(E.coo1, E.coo1 + E.size());
+  std::vector<int> tmp_vec2(E.coo2, E.coo2 + E.size());
   for (size_t i = 0; i < size; i++)
   {
-    vec1[i] = tmp_vec1[indices[i]];
-    vec2[i] = tmp_vec2[indices[i]];
+    E.coo1[i] = tmp_vec1[indices[i]];
+    E.coo2[i] = tmp_vec2[indices[i]];
   }
 }
 
@@ -187,13 +186,12 @@ void improved_mergesort_three(EdgeList &E)
   }
 
   // Assembly on Host
-  cudaMemcpy(E.val.data(), output, size * sizeof(int), cudaMemcpyDeviceToHost);
+  cudaMemcpy(E.val, output, size * sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(initial.data(), output_ind, sizeof(int) * E.size(), cudaMemcpyDeviceToHost);
   E.set_owner(HOST);
 
-  std::vector<int> tmp_vec1, tmp_vec2;
-  tmp_vec1 = E.coo1;
-  tmp_vec2 = E.coo2;
+  std::vector<int> tmp_vec1(E.coo1, E.coo1 + E.size());
+  std::vector<int> tmp_vec2(E.coo2, E.coo2 + E.size());
   for (int i = 0; i < size; i++)
   {
     E.coo1[i] = tmp_vec1[initial[i]];
@@ -555,14 +553,12 @@ void radix_sort(EdgeList &E)
                                           current_bits
                                       );
   }
-
-  cudaMemcpy(E.val.data(), E.d_val, sizeof(int) * size, cudaMemcpyDeviceToHost);
+  cudaMemcpy(E.val, E.d_val, sizeof(int) * size, cudaMemcpyDeviceToHost);
   cudaMemcpy(initial.data(), cuda_ind_tmp, size * sizeof(int), cudaMemcpyDeviceToHost);
   E.set_owner(HOST);
 
-  std::vector<int> tmp_vec1, tmp_vec2;
-  tmp_vec1 = E.coo1;
-  tmp_vec2 = E.coo2;
+  std::vector<int> tmp_vec1(E.coo1, E.coo1 + E.size());
+  std::vector<int> tmp_vec2(E.coo2, E.coo2 + E.size());
   for (int i = 0; i < size; i++)
   {
     E.coo1[i] = tmp_vec1[initial[i]];

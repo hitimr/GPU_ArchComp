@@ -13,20 +13,24 @@ void EdgeList::sync_hostToDevice()
 
   cudaDeviceSynchronize();
 
+  cudaFree(d_coo1);
+  cudaFree(d_coo2);
+  cudaFree(d_val);
+
   // coo1
-  size_t bytes = sizeof(int) * coo1.size();
+  size_t bytes = sizeof(int) * size();
   cudaMalloc(&d_coo1, bytes);
-  cudaMemcpy(d_coo1, coo1.data(), bytes, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_coo1, coo1, bytes, cudaMemcpyHostToDevice);
 
   // coo2
-  bytes = sizeof(int) * coo2.size();
+  bytes = sizeof(int) * size();
   cudaMalloc(&d_coo2, bytes);
-  cudaMemcpy(d_coo2, coo2.data(), bytes, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_coo2, coo2, bytes, cudaMemcpyHostToDevice);
 
   // val
-  bytes = sizeof(int) * val.size();
+  bytes = sizeof(int) * size();
   cudaMalloc(&d_val, bytes);
-  cudaMemcpy(d_val, val.data(), bytes, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_val, val, bytes, cudaMemcpyHostToDevice);
 
   // constants
   bytes = sizeof(EdgeList);
@@ -47,29 +51,42 @@ void EdgeList::sync_deviceToHost()
   cudaDeviceSynchronize();
 
   // coo1
-  size_t bytes = sizeof(int) * coo1.size();
-  cudaMemcpy(coo1.data(), d_coo1, bytes, cudaMemcpyDeviceToHost);
+  size_t bytes = sizeof(int) * size();
+  cudaMemcpy(coo1, d_coo1, bytes, cudaMemcpyDeviceToHost);
 
   // coo2
-  bytes = sizeof(int) * coo2.size();
-  cudaMemcpy(coo2.data(), d_coo2, bytes, cudaMemcpyDeviceToHost);
+  bytes = sizeof(int) * size();
+  cudaMemcpy(coo2, d_coo2, bytes, cudaMemcpyDeviceToHost);
 
   // val
-  bytes = sizeof(int) * val.size();
-  cudaMemcpy(val.data(), d_val, bytes, cudaMemcpyDeviceToHost);
+  bytes = sizeof(int) * size();
+  cudaMemcpy(val, d_val, bytes, cudaMemcpyDeviceToHost);
 
   owner = HOST;
 }
 
-void EdgeList::reserve(size_t size)
+void EdgeList::reserve(size_t new_size)
 {
-  assert(size >= coo1.size());
+  assert(new_size >= size());
 
-  coo1.reserve(size);
-  coo2.reserve(size);
-  val.reserve(size);
+  // reserve on CPU
+  size_t bytes = new_size * sizeof(int);
+  if (g_options.count("pinned-memory"))
+  {
+    // Use pinned memory
+    cudaMallocHost(&val, bytes);
+    cudaMallocHost(&coo1, bytes);
+    cudaMallocHost(&coo2, bytes);
+  }
+  else
+  {
+    // use regular memory
+    val = new int[new_size];
+    coo1 = new int[new_size];
+    coo2 = new int[new_size];
+  }
 
-  size_t bytes = size * sizeof(int);
+  // Reserve on GPU
   cudaMalloc(&d_coo1, bytes);
   cudaMalloc(&d_coo2, bytes);
   cudaMalloc(&d_val, bytes);
@@ -77,16 +94,29 @@ void EdgeList::reserve(size_t size)
 
 void EdgeList::resize_and_set_num_edges(size_t size)
 {
-  coo1.resize(size);
-  coo2.resize(size);
-  val.resize(size);
+  // reserve on CPU
+  size_t bytes = size * sizeof(int);
+  if (g_options.count("pinned-memory"))
+  {
+    // Use pinned memory
+    cudaMallocHost(&val, bytes);
+    cudaMallocHost(&coo1, bytes);
+    cudaMallocHost(&coo2, bytes);
+  }
+  else
+  {
+    // use regular memory
+    val = new int[size];
+    coo1 = new int[size];
+    coo2 = new int[size];
+  }
+
   num_edges = size;
 
   cudaFree(d_coo1);
   cudaFree(d_coo2);
   cudaFree(d_val);
 
-  size_t bytes = size * sizeof(int);
   cudaMalloc(&d_coo1, bytes);
   cudaMalloc(&d_coo2, bytes);
   cudaMalloc(&d_val, bytes);

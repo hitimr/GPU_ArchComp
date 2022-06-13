@@ -22,7 +22,10 @@ class EdgeList
 public:
   // Construct an edgelist from a given input file
   // format as specified in TUWEL
-  EdgeList(std::string file_name) { load_from_file(file_name); };
+  EdgeList(std::string file_name)
+  {
+    load_from_file(file_name);
+  };
 
   EdgeList()
   {
@@ -37,6 +40,8 @@ public:
     reserve(size);
   }
 
+  ~EdgeList() {}
+
   // GPU Interface
   EdgeList *gpu; // Class holds a pointer to a copy of itself located on GPU memory
   void init_gpu();
@@ -49,7 +54,7 @@ public:
     std::string filepath = std::string(file_name);
     std::fstream input_file;
     input_file.open(filepath, std::ios::in);
-    if(!input_file.is_open())
+    if (!input_file.is_open())
     {
       throw std::runtime_error("Unable to open File " + file_name);
     }
@@ -77,9 +82,9 @@ public:
         num_edges = std::stoi(row[2]);
         direction = std::stoi(row[3]);
 
-        coo1.resize(num_edges);
-        coo2.resize(num_edges);
-        val.resize(num_edges);
+        val = new int[num_edges];
+        coo1 = new int[num_edges];
+        coo2 = new int[num_edges];
       }
 
       // Edges
@@ -104,8 +109,8 @@ public:
       throw std::runtime_error("unable to write to " + file_name);
     }
 
-    file << "H;" << val.size() + 1 << ";" << val.size() << ";1" << std::endl;
-    for (size_t i = 0; i < val.size(); i++)
+    file << "H;" << size() + 1 << ";" << size() << ";1" << std::endl;
+    for (size_t i = 0; i < size(); i++)
     {
       Edge edge = at(i);
       file << "E;" << edge.source << ";" << edge.target << ";" << edge.weight << std::endl;
@@ -121,11 +126,11 @@ public:
   // append a new edge to the edgelist
   void append_edge(int source, int target, int weight)
   {
-    coo1.push_back(source);
-    coo2.push_back(target);
-    val.push_back(weight);
+    sync_deviceToHost();
+    val[num_edges] = weight;
+    coo1[num_edges] = weight;
+    coo2[num_edges] = weight;
     num_edges += 1;
-    // correctly update number of nodes
   }
 
   void resize_and_set_num_edges(size_t size);
@@ -139,9 +144,9 @@ public:
   int weigth()
   {
     int sum = 0;
-    for (int v : val)
+    for (size_t i = 0; i < size(); i++)
     {
-      sum += v;
+      sum += val[i];
     }
     return sum;
   }
@@ -159,14 +164,15 @@ public:
   size_t num_edges;
   int direction;
   int owner = HOST;
+  bool m_use_pinned_memory = false;
 
   // CPU Data
-  std::vector<int> coo1;
-  std::vector<int> coo2;
-  std::vector<int> val;
+  int *coo1;
+  int *coo2;
+  int *val;
 
   // GPU Data
-  int *d_coo1;
-  int *d_coo2;
-  int *d_val;
+  int *d_coo1 = nullptr;
+  int *d_coo2 = nullptr;
+  int *d_val = nullptr;
 };
