@@ -3,11 +3,8 @@ import pandas as pd
 import igraph as ig
 import time
 import math
-import random
 
 import common
-
-
 
 
 # Generate a random, connected graph using Barabasi algorithm
@@ -93,20 +90,14 @@ def graph_stats(num_edges, density):
     return num_nodes, connectivity
 
 def create_graphs(graph_list, output_dir=common.INPUT_DATA_DIR, create_mst=True):
-    # graph list is a list of dictionaries:
-    # [{n_edges: int, density: float, w_min: int, w_max: int}]
     for graph in graph_list:
-#        print(graph)
-#        print(graph["n_nodes"])
 
         base_filename = output_dir / \
-        f"barabasi_{graph['n_nodes']}_{graph['connectivity']}" 
+        f"barabasi_{graph['n_nodes']}_{graph['density']}" 
 
-        # generate Connected, weithed graph
+        # generate Connected, weighted graph
         print("generating graph... n_nodes: {:.1e}, connectivity: {:.3e}".format(graph['n_nodes'], graph['connectivity']))
         start_time = time.time()
-        #n_nodes, connectivity = graph_stats(graph['n_edges'], graph['density'])
-        #print("settling for n_nodes: {}, connectivity: {}, n_edges: {:.3e}".format(n_nodes, connectivity, n_nodes*connectivity))
         g = generate_graph(graph['n_nodes'], graph['connectivity'], w_min=graph['w_min'], w_max=graph['w_max'])
         print("graph generated in {:.2f} seconds".format(time.time() - start_time))
 
@@ -126,37 +117,26 @@ def create_graphs(graph_list, output_dir=common.INPUT_DATA_DIR, create_mst=True)
 
 if __name__ == "__main__":
 
-    #densities = [.01, .1, .25, .5, .75, .9, .99]
-    # densities = [.5]
-    #c_facs = [.052,.054,.056,.058]
-    #c_facs = [.292,.294,.296,.298]
-    #connectivities = [60,70,80,90,100]  
-    connectivities = [1]  
+    d_fac = {"10pct": .053, "50pct": .293, "90pct": .684} # these factors will create the desired densities
 
-    #c_facs = [.053]
-    c_facs = [.293]
+    ranges = {"10pct": [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600],
+              "50pct": [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800],
+              "90pct": [25, 50, 100, 200, 400, 800, 1600, 3200, 6400]    
+             }
 
-    for f in c_facs: 
-        graph_list = [
-            {"n_nodes": 100, "connectivity": int(f*100), "w_min": 1, "w_max": 1000},
-            {"n_nodes": 200, "connectivity": int(f*200), "w_min": 1, "w_max": 1000},
-            {"n_nodes": 400, "connectivity": int(f*400), "w_min": 1, "w_max": 1000},
-            {"n_nodes": 800, "connectivity": int(f*800), "w_min": 1, "w_max": 1000}
-#            {"n_nodes": 1600, "connectivity": int(f*1600), "w_min": 1, "w_max": 1000},
-#            {"n_nodes": 3200, "connectivity": int(f*3200), "w_min": 1, "w_max": 1000},
-#            {"n_nodes": 6400, "connectivity": int(f*6400), "w_min": 1, "w_max": 1000}
-#            {"n_nodes": 3200, "connectivity": int(c_fac*3200), "w_min": 1, "w_max": 1000},
-#            {"n_edges": int(3e4), "density": d, "w_min": 1, "w_max": 1000}
-#            {"n_edges": int(1e5), "density": d, "w_min": 1, "w_max": 1000},
-#            {"n_edges": int(3e5), "density": d, "w_min": 1, "w_max": 1000},
-#            {"n_edges": int(1e6), "density": d, "w_min": 1, "w_max": 1000},
-#            {"n_edges": int(3e6), "density": d, "w_min": 1, "w_max": 1000},
-#            {"n_edges": int(1e7), "density": d, "w_min": 1, "w_max": 1000},
-#            {"n_edges": int(3e7), "density": d, "w_min": 1, "w_max": 1000}
-        ]
-#        out_dir = common.INPUT_DATA_DIR / "tester"
+    #for key in d_fac:
+    for key in ['90pct']:
+        print("density: ", key)
+        graph_list = []
+        for r in ranges[key]:
+            graph_list.append({"n_nodes": r, "connectivity": int(d_fac[key]*r), "w_min": 1, "w_max": 1000, 'density': key})
+        print('list of graphs to be created:')
+        for graph in graph_list:
+            print(graph)
+        print('')
+
         out_dir = common.WORKSPACE_DIR / "benchmark_data"
-        create_graphs(graph_list, output_dir=out_dir, create_mst=False)
-
+        print('creating graphs: ')
+        create_graphs(graph_list, output_dir=out_dir, create_mst=True)
 
 
