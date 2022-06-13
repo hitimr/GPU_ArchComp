@@ -59,7 +59,7 @@ int main(int ac, char **av)
   {
     std::cout << "Error! Weight of MST does not match reference" << std::endl;
     std::cout << "Calculated: " << MST.weigth() << std::endl;
-    std::cout << "Reference:" << MST_reference.weigth() << std::endl;
+    std::cout << "Reference: " << MST_reference.weigth() << std::endl;
     throw std::runtime_error("Weight of MST does not match reference");
   }
 
