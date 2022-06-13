@@ -15,9 +15,9 @@ def test_calculateMST(args=""):
 
 
 if __name__ == "__main__":
-    sort_kernels = range(1,4)
-    filter_kernels = range(1,3)
-    partition_kernels = range(1,4)
+    sort_kernels = range(4)
+    filter_kernels = range(3)
+    partition_kernels = range(4)
 
     for sort_kernel in sort_kernels:
         for filter_kernel in filter_kernels:
