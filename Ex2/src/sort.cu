@@ -27,7 +27,6 @@
 void sort_edgelist(EdgeList &E, int kernel)
 {
   g_benchmarker.start("sort()");
-  E.sync_deviceToHost();  // TODO: remove before release
 
   switch (kernel)
   {
@@ -56,6 +55,7 @@ void sort_edgelist(EdgeList &E, int kernel)
 
 void gpu_thrust_sort_three(EdgeList &E)
 {
+
   // TODO: initialize Thrust DS on GPU
   size_t size = E.size();
   int num_bytes = E.size() * sizeof(int);
