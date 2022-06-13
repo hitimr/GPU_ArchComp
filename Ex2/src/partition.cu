@@ -604,7 +604,6 @@ void filter_thrust(EdgeList &E, UnionFind &P)
 
   int size_E_new = thrust::count_if(thrust::device, ptr_d_truth, ptr_d_truth + size, is_valid());
 
-  // reserve some space here for leq and ge vectors
   E_new.resize_and_set_num_edges(size_E_new);
   E_new.set_owner(DEVICE);
 
