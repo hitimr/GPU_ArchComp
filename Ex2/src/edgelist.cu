@@ -32,11 +32,6 @@ void EdgeList::sync_hostToDevice()
   cudaMalloc(&d_val, bytes);
   cudaMemcpy(d_val, val, bytes, cudaMemcpyHostToDevice);
 
-  // constants
-  bytes = sizeof(EdgeList);
-  cudaMalloc(&gpu, bytes);
-  cudaMemcpy(gpu, this, bytes, cudaMemcpyHostToDevice);
-
   owner = DEVICE;
 }
 
@@ -61,7 +56,7 @@ void EdgeList::sync_deviceToHost()
   // val
   bytes = sizeof(int) * size();
   cudaMemcpy(val, d_val, bytes, cudaMemcpyDeviceToHost);
-
+  
   owner = HOST;
 }
 
