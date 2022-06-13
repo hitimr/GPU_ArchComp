@@ -110,7 +110,7 @@ void kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
 
   // grow MST
   g_benchmarker.start("grow MST");
-  for (size_t i = 0; i < E.num_edges; i++)
+  for (size_t i = 0; i < E.size(); i++)
   {
     if (P.find_and_compress(E.coo1[i]) != P.find_and_compress(E.coo2[i]))
     {
