@@ -138,7 +138,7 @@ if __name__ == "__main__":
              }
 
     #for key in d_fac:
-    for key in ['90pct']:
+    for key in ['50pct']:
         print("density: ", key)
         graph_list = []
         for r in ranges[key]:
