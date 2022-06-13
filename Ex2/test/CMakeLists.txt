@@ -8,6 +8,7 @@ set(MY_TEST_NAMES "")
 list(APPEND MY_TEST_NAMES "test_sort")
 list(APPEND MY_TEST_NAMES "test_partition")
 list(APPEND MY_TEST_NAMES "test_edgeList")
+list(APPEND MY_TEST_NAMES "test_filter")
 
 
 foreach(MY_TEST_NAME ${MY_TEST_NAMES})
@@ -15,6 +16,7 @@ foreach(MY_TEST_NAME ${MY_TEST_NAMES})
         ../src/edgelist.cu 
         ../src/sort.cu
         ../src/partition.cu
+        ../src/kruskal.cu
     )
     # target_link_libraries(${MY_TEST_NAME} PRIVATE ${MY_LIBRARY})
 
