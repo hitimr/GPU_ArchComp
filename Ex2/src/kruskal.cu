@@ -90,6 +90,8 @@ void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
 
     filter(E_big, P, g_options["filter-kernel"].as<int>());
 
+    E_big.sync_deviceToHost();  // TODO: (Workaround) remove before release and fix bug
+
     if (E_big.size() != 0)
     {
       filter_kruskal(E_big, P, T);
@@ -97,8 +99,6 @@ void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
   }
 }
 
-// std::vector<int> kruskal(std::vector<int> &coo1, std::vector<int> &coo2, std::vector<int> &val,
-// const size_t num_nodes, bool debug = false){
 void kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
 {
   g_benchmarker.start("Kruskal()");

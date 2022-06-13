@@ -36,8 +36,8 @@ void partition(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshold, int 
   g_benchmarker.stop("partition()");
 }
 
-void filter(EdgeList &E, UnionFind &P, int kernel)
 {
+void filter(EdgeList &E, UnionFind &P, int kernel)
   g_benchmarker.start("filter()");
 
   switch (kernel)
