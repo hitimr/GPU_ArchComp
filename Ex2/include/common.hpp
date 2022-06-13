@@ -43,7 +43,7 @@ extern Benchmarker g_benchmarker;
 #define MST_DEFAULT_KERNEL MST_KERNEL_FILTER_KRUSKAL      // MST
 #define SORT_DEFAULT_KERNEL SORT_KERNEL_MERGE_SORT        // Sort
 #define PARTITION_DEFAULT_KERNEL PARTITION_KERNEL_GPU     // Partition
-#define DEFAULT_FILTER_KERNEL FILTER_KERNEL_GPU           // Filter
+#define DEFAULT_FILTER_KERNEL FILTER_KERNEL_CPU_NAIVE     // Filter
 #define DEFAULT_COMPRESS_KERNEL COMPRESS_KERNEL_CPU_NAIVE // Path Comrpession
 #define DEFAULT_MAX_RECURSION_DEPTH 32                    // For Kruskal Threshold
 #define DEFAULT_REPETITIONS 1                             // Repetitions
