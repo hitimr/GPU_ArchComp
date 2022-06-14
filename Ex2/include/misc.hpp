@@ -51,6 +51,14 @@ std::string get_input_file()
   return input_file;
 }
 
+std::string get_example_file()
+{
+  // Load input file
+  std::string input_file = misc::get_proj_root_dir().append("input_data/example.csv");
+
+  return input_file;
+}
+
 std::string get_gt_file()
 {
   std::string file_name = get_input_file();

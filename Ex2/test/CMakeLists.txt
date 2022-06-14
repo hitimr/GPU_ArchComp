@@ -17,6 +17,7 @@ foreach(MY_TEST_NAME ${MY_TEST_NAMES})
         ../src/sort.cu
         ../src/partition.cu
         ../src/kruskal.cu
+        ../src/union_find.cu
     )
     # target_link_libraries(${MY_TEST_NAME} PRIVATE ${MY_LIBRARY})
 

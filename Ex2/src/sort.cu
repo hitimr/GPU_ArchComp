@@ -53,39 +53,46 @@ void sort_edgelist(EdgeList &E, int kernel)
   g_benchmarker.stop("sort()");
 }
 
+__global__ void assemble_with_indices(int *d_coo1, int *d_coo2, int *tmp_coo1, int *tmp_coo2,
+                                      int *sorted_indices, int size)
+{
+  int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
+  int num_threads = blockDim.x * gridDim.x;
+
+  for (size_t i = thread_id; i < size; i += num_threads)
+  {
+    d_coo1[i] = tmp_coo1[sorted_indices[i]];
+    d_coo2[i] = tmp_coo2[sorted_indices[i]];
+  }
+}
+
 void gpu_thrust_sort_three(EdgeList &E)
 {
+  E.sync_hostToDevice();
 
-  // TODO: initialize Thrust DS on GPU
   size_t size = E.size();
   int num_bytes = E.size() * sizeof(int);
 
-  thrust::host_vector<int> h_vec(E.val, E.val + E.size());
-  thrust::device_vector<int> d_vec = h_vec;
-
-  thrust::host_vector<int> h_ind_vec(E.val, E.val + E.size());
-  thrust::device_vector<int> d_ind_vec = h_ind_vec;
-  thrust::sequence(h_ind_vec.begin(), h_ind_vec.end());
-
-  thrust::copy(h_ind_vec.begin(), h_ind_vec.end(), d_ind_vec.begin());
+  thrust::device_vector<int> d_vec(E.d_val, E.d_val + E.size());
+  thrust::device_vector<int> d_ind_vec(E.size());
+  thrust::sequence(d_ind_vec.begin(), d_ind_vec.end());
 
   thrust::sort_by_key(d_vec.begin(), d_vec.end(), d_ind_vec.begin());
 
-  thrust::copy(d_vec.begin(), d_vec.end(), h_vec.begin());
-  thrust::copy(h_vec.begin(), h_vec.end(), E.val);
+  // TODO: maybe perform assemlby on GPU..
+  thrust::copy(d_vec.begin(), d_vec.end(), E.d_val);
 
-  std::vector<int> indices(size);
-  thrust::copy(d_ind_vec.begin(), d_ind_vec.end(), h_ind_vec.begin());
-  thrust::copy(h_ind_vec.begin(), h_ind_vec.end(), indices.begin());
-  E.set_owner(HOST);
+  size_t bytes = E.size() * sizeof(int);
+  int *tmp_coo1, *tmp_coo2;
+  cudaMalloc(&tmp_coo1, bytes);
+  cudaMalloc(&tmp_coo2, bytes);
+  cudaMemcpy(tmp_coo1, E.d_coo1, bytes, cudaMemcpyDeviceToDevice);
+  cudaMemcpy(tmp_coo2, E.d_coo2, bytes, cudaMemcpyDeviceToDevice);
+  int *d_ind_ptr = thrust::raw_pointer_cast(d_ind_vec.data());
 
-  std::vector<int> tmp_vec1(E.coo1, E.coo1 + E.size());
-  std::vector<int> tmp_vec2(E.coo2, E.coo2 + E.size());
-  for (size_t i = 0; i < size; i++)
-  {
-    E.coo1[i] = tmp_vec1[indices[i]];
-    E.coo2[i] = tmp_vec2[indices[i]];
-  }
+  assemble_with_indices<<<GRID_SIZE, BLOCK_SIZE>>>(E.d_coo1, E.d_coo2, tmp_coo1, tmp_coo2,
+                                                   d_ind_ptr, size);
+  cudaDeviceSynchronize();
 }
 
 __global__ void gpu_merge_sort_thread_per_block_with_ind(int *input, int *output, int size,
@@ -126,9 +133,7 @@ __global__ void gpu_merge_sort_thread_per_block_with_ind(int *input, int *output
   }
 }
 
-// void improved_mergesort_three(std::vector<int> &vec, std::vector<int> &vec1, std::vector<int>
 void improved_mergesort_three(EdgeList &E)
-// &vec2)
 {
   E.sync_hostToDevice();
 
@@ -286,96 +291,92 @@ __global__ void add_prefix_inplace(int *in, int size, int *partial_sums)
   }
 }
 
-//https://www.eecs.umich.edu/courses/eecs570/hw/parprefix.pdf
-__global__ void gpu_prescan(int* out, int* in, int size,
-    int* partial_sums)
+// https://www.eecs.umich.edu/courses/eecs570/hw/parprefix.pdf
+__global__ void gpu_prescan(int *out, int *in, int size, int *partial_sums)
 {
-    extern __shared__ int tmp[];
+  extern __shared__ int tmp[];
 
-    int global_thread_id = 2 * blockDim.x * blockIdx.x + threadIdx.x;
+  int global_thread_id = 2 * blockDim.x * blockIdx.x + threadIdx.x;
 
-    if(global_thread_id < blockDim.x * 2){
-        tmp[global_thread_id] = 0;
-    }
+  if (global_thread_id < blockDim.x * 2)
+  {
+    tmp[global_thread_id] = 0;
+  }
 
+  __syncthreads();
+
+  if (global_thread_id < size)
+  {
+    tmp[threadIdx.x + CONFLICT_FREE_OFFSET(threadIdx.x)] = in[global_thread_id];
+    if (global_thread_id + blockDim.x < size)
+      tmp[threadIdx.x + blockDim.x + CONFLICT_FREE_OFFSET(threadIdx.x + blockDim.x)] =
+          in[global_thread_id + blockDim.x];
+  }
+
+  int offset = 1;
+  for (int d = 2 * blockDim.x >> 1; d > 0; d >>= 1)
+  {
     __syncthreads();
 
-    if (global_thread_id < size)
+    if (threadIdx.x < d)
     {
-        tmp[threadIdx.x + CONFLICT_FREE_OFFSET(threadIdx.x)] = in[global_thread_id];
-        if (global_thread_id + blockDim.x < size)
-            tmp[threadIdx.x + blockDim.x + CONFLICT_FREE_OFFSET(threadIdx.x + blockDim.x)] = in[global_thread_id + blockDim.x];
+      int ai = offset * (threadIdx.x * 2 + 1) - 1;
+      int bi = offset * (threadIdx.x * 2 + 2) - 1;
+      ai += CONFLICT_FREE_OFFSET(ai);
+      bi += CONFLICT_FREE_OFFSET(bi);
+
+      tmp[bi] += tmp[ai];
     }
+    offset <<= 1;
+  }
 
-    int offset = 1;
-    for (int d = 2 * blockDim.x >> 1; d > 0; d >>= 1)
-    {
-        __syncthreads();
-
-        if (threadIdx.x < d)
-        {
-            int ai = offset * (threadIdx.x * 2 + 1) - 1;
-            int bi = offset * (threadIdx.x * 2 + 2) - 1;
-            ai += CONFLICT_FREE_OFFSET(ai);
-            bi += CONFLICT_FREE_OFFSET(bi);
-
-            tmp[bi] += tmp[ai];
-        }
-        offset <<= 1;
-    }
-
-    if (threadIdx.x == 0) 
-    { 
-        //to be reused later
-        partial_sums[blockIdx.x] = tmp[2 * blockDim.x - 1 
-            + CONFLICT_FREE_OFFSET(2 * blockDim.x - 1)];
-        tmp[2 * blockDim.x - 1 
-            + CONFLICT_FREE_OFFSET(2 * blockDim.x - 1)] = 0;
-    }
-    for (int d = 1; d < 2 * blockDim.x; d <<= 1)
-    {
-        offset >>= 1;
-        __syncthreads();
-
-        if (threadIdx.x < d)
-        {
-            int ai = offset * ((threadIdx.x << 1) + 1) - 1;
-            int bi = offset * ((threadIdx.x << 1) + 2) - 1;
-            ai += CONFLICT_FREE_OFFSET(ai);
-            bi += CONFLICT_FREE_OFFSET(bi);
-
-            int temp = tmp[ai];
-            tmp[ai] = tmp[bi];
-            tmp[bi] += temp;
-        }
-    }
+  if (threadIdx.x == 0)
+  {
+    // to be reused later
+    partial_sums[blockIdx.x] = tmp[2 * blockDim.x - 1 + CONFLICT_FREE_OFFSET(2 * blockDim.x - 1)];
+    tmp[2 * blockDim.x - 1 + CONFLICT_FREE_OFFSET(2 * blockDim.x - 1)] = 0;
+  }
+  for (int d = 1; d < 2 * blockDim.x; d <<= 1)
+  {
+    offset >>= 1;
     __syncthreads();
-    if (global_thread_id < size)
+
+    if (threadIdx.x < d)
     {
-        out[global_thread_id] = tmp[threadIdx.x + CONFLICT_FREE_OFFSET(threadIdx.x)];
-        if (global_thread_id + blockDim.x < size)
-            out[global_thread_id + blockDim.x] = tmp[threadIdx.x + blockDim.x + CONFLICT_FREE_OFFSET(threadIdx.x + blockDim.x)];
+      int ai = offset * ((threadIdx.x << 1) + 1) - 1;
+      int bi = offset * ((threadIdx.x << 1) + 2) - 1;
+      ai += CONFLICT_FREE_OFFSET(ai);
+      bi += CONFLICT_FREE_OFFSET(bi);
+
+      int temp = tmp[ai];
+      tmp[ai] = tmp[bi];
+      tmp[bi] += temp;
     }
+  }
+  __syncthreads();
+  if (global_thread_id < size)
+  {
+    out[global_thread_id] = tmp[threadIdx.x + CONFLICT_FREE_OFFSET(threadIdx.x)];
+    if (global_thread_id + blockDim.x < size)
+      out[global_thread_id + blockDim.x] =
+          tmp[threadIdx.x + blockDim.x + CONFLICT_FREE_OFFSET(threadIdx.x + blockDim.x)];
+  }
 }
 
-__global__ void first_stage(int* in, int* out, int size,
-  int *in_ind, int *out_ind,
-  int* prefixes,
-  int* partial_sums,
-  int bit_shift
-)
+__global__ void first_stage(int *in, int *out, int size, int *in_ind, int *out_ind, int *prefixes,
+                            int *partial_sums, int bit_shift)
 {
   int thread_id = blockDim.x * blockIdx.x + threadIdx.x;
 
   extern __shared__ int tmp[];
 
-  int* masks = tmp + blockDim.x + 1;
-  int* scan_output = masks + blockDim.x + 1;
-  int* masks_sums = scan_output + blockDim.x + 1;
-  int* scan_sums = masks_sums + SPLIT_SIZE + 1;
-  int* tmp_ind = scan_sums + blockDim.x + 1;
+  int *masks = tmp + blockDim.x + 1;
+  int *scan_output = masks + blockDim.x + 1;
+  int *masks_sums = scan_output + blockDim.x + 1;
+  int *scan_sums = masks_sums + SPLIT_SIZE + 1;
+  int *tmp_ind = scan_sums + blockDim.x + 1;
 
-  for(int i = thread_id; i < size; i += (blockDim.x * gridDim.x))
+  for (int i = thread_id; i < size; i += (blockDim.x * gridDim.x))
   {
     tmp[threadIdx.x] = in[i];
     tmp_ind[threadIdx.x] = in_ind[i];
@@ -400,16 +401,19 @@ __global__ void first_stage(int* in, int* out, int size,
     __syncthreads();
 
     int sum = 0;
-    for (int d = 1; d < blockDim.x + 1; d*=2) {
-      if (threadIdx.x >= d) {
+    for (int d = 1; d < blockDim.x + 1; d *= 2)
+    {
+      if (threadIdx.x >= d)
+      {
         sum = masks[threadIdx.x + 1] + masks[threadIdx.x + 1 - d];
       }
-      else {
+      else
+      {
         sum = masks[threadIdx.x + 1];
       }
-        __syncthreads();
-        masks[threadIdx.x + 1] = sum;
-        __syncthreads();
+      __syncthreads();
+      masks[threadIdx.x + 1] = sum;
+      __syncthreads();
     }
 
     if (threadIdx.x == 0)
@@ -423,7 +427,6 @@ __global__ void first_stage(int* in, int* out, int size,
     {
       scan_output[threadIdx.x] = masks[threadIdx.x];
     }
-
   }
 
   __syncthreads();
@@ -446,7 +449,7 @@ __global__ void first_stage(int* in, int* out, int size,
     int new_pos = scan_output[threadIdx.x] + scan_sums[current_bits];
     __syncthreads();
     tmp[new_pos] = current_value;
-    tmp_ind[new_pos] = current_ind; 
+    tmp_ind[new_pos] = current_ind;
     scan_output[new_pos] = tmp_scan;
     __syncthreads();
     prefixes[thread_id] = scan_output[threadIdx.x];
@@ -455,44 +458,34 @@ __global__ void first_stage(int* in, int* out, int size,
   }
 }
 
-void scan(int* in, int* out,
-  int size)
+void scan(int *in, int *out, int size)
 {
-  // New grid size ( we want just to have as much as we need)      
+  // New grid size ( we want just to have as much as we need)
   int grid_size = (size / BLOCK_SIZE) + (size % BLOCK_SIZE != 0);
   // Calculate tmp size for the conflict free scan
   int tmp_size = BLOCK_SIZE + ((BLOCK_SIZE) >> LOG_NUM_BANKS);
 
-  //tmp for current state
-  int* partial_sums;
+  // tmp for current state
+  int *partial_sums;
   cudaMalloc(&partial_sums, sizeof(int) * grid_size);
 
-  gpu_prescan<<<grid_size, BLOCK_SIZE/2, sizeof(int) * tmp_size>>>(out, 
-      in, 
-      size,
-      partial_sums
-  );
-
+  gpu_prescan<<<grid_size, BLOCK_SIZE / 2, sizeof(int) * tmp_size>>>(out, in, size, partial_sums);
 
   if (grid_size > BLOCK_SIZE)
   {
-      cudaMemcpy(in, partial_sums, sizeof(int) * grid_size, cudaMemcpyDeviceToDevice);
-      scan(in, partial_sums, grid_size);
+    cudaMemcpy(in, partial_sums, sizeof(int) * grid_size, cudaMemcpyDeviceToDevice);
+    scan(in, partial_sums, grid_size);
   }
   else
   {
-      gpu_prescan<<<1, BLOCK_SIZE/2, sizeof(int) * tmp_size>>>(partial_sums, 
-          partial_sums, 
-          grid_size,
-          in
-      );
+    gpu_prescan<<<1, BLOCK_SIZE / 2, sizeof(int) * tmp_size>>>(partial_sums, partial_sums,
+                                                               grid_size, in);
   }
 
-  add_prefix_inplace<<<grid_size, BLOCK_SIZE/2>>>(out, size, partial_sums);
+  add_prefix_inplace<<<grid_size, BLOCK_SIZE / 2>>>(out, size, partial_sums);
 
   cudaFree(partial_sums);
 }
-
 
 void radix_sort(EdgeList &E)
 {
@@ -536,22 +529,13 @@ void radix_sort(EdgeList &E)
 
   for (int current_bits = 0; current_bits <= 30; current_bits += 2)
   {
-      first_stage<<<grid_size, BLOCK_SIZE, memory_size>>>(
-                                                          E.d_val, cuda_out, size,
-                                                          cuda_ind_vec, cuda_ind_tmp,
-                                                          cuda_prefix_sums, 
-                                                          cuda_block_sums, 
-                                                          current_bits
-                                                      );
-      scan(cuda_block_sums, cuda_scan_block_sums, SPLIT_SIZE * grid_size);
+    first_stage<<<grid_size, BLOCK_SIZE, memory_size>>>(E.d_val, cuda_out, size, cuda_ind_vec,
+                                                        cuda_ind_tmp, cuda_prefix_sums,
+                                                        cuda_block_sums, current_bits);
+    scan(cuda_block_sums, cuda_scan_block_sums, SPLIT_SIZE * grid_size);
 
-
-      final_sort<<<grid_size, BLOCK_SIZE>>>(cuda_out, E.d_val, size,
-                                          cuda_ind_tmp, cuda_ind_vec,
-                                          cuda_prefix_sums, 
-                                          cuda_scan_block_sums, 
-                                          current_bits
-                                      );
+    final_sort<<<grid_size, BLOCK_SIZE>>>(cuda_out, E.d_val, size, cuda_ind_tmp, cuda_ind_vec,
+                                          cuda_prefix_sums, cuda_scan_block_sums, current_bits);
   }
   cudaMemcpy(E.val, E.d_val, sizeof(int) * size, cudaMemcpyDeviceToHost);
   cudaMemcpy(initial.data(), cuda_ind_tmp, size * sizeof(int), cudaMemcpyDeviceToHost);

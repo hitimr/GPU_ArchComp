@@ -17,7 +17,7 @@ __global__ void modify_1(int *val)
 
 void test_transfer()
 {
-  EdgeList E(misc::get_input_file());
+  EdgeList E(misc::get_example_file());
   assert(E.owner == HOST);
 
   E.sync_hostToDevice();
@@ -33,6 +33,22 @@ void test_transfer()
   assert(E.val[0] == -1);
 }
 
+
+void test_assignment()
+{
+  EdgeList E(misc::get_example_file());
+  int first_val = E.val[0];
+  E.sync_hostToDevice();
+
+  EdgeList E_new;
+  assert(E_new.size() == 0);
+  E_new = E;
+
+  assert(E_new.val[0] == first_val);  
+  assert(E.size() == E_new.size());
+
+}
+
 int main(int ac, char **av)
 {
 
@@ -40,6 +56,7 @@ int main(int ac, char **av)
   g_options = misc::parse_options(ac, av);
 
   test_transfer();
+  test_assignment();
 
   return 0;
 }
