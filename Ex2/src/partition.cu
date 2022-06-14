@@ -499,7 +499,7 @@ void filter_gpu_naive(EdgeList &E, UnionFind &P)
   create_partitioned_array_filter<<<GRIDSIZE, BLOCKSIZE>>>(E.d_val, E.d_coo1, E.d_coo2, d_truth,
                                                            d_scanned_truth, E_new.d_val,
                                                            E_new.d_coo1, E_new.d_coo2, size);
-
+  cudaDeviceSynchronize();
   cudaFree(d_truth);
   cudaFree(d_scanned_truth);
 
@@ -616,4 +616,5 @@ void filter_thrust(EdgeList &E, UnionFind &P)
   cudaFree(d_truth);
 
   E = std::move(E_new);
+  E.sync_deviceToHost();
 }
