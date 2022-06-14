@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define TEST_SIZE (int)1e5
+#define TEST_SIZE (int)10
 
 Benchmarker g_benchmarker;
 OptionsT g_options;
@@ -35,10 +35,11 @@ void test_partition_kernel(int kernel)
 
   // Fill EdgeList with 1,2,3...
   std::iota(&E.coo1[0], &E.coo1[E.size()], 0);
-  std::iota(&E.coo2[0], &E.coo2[E.size()], 0);
+  std::iota(&E.coo2[0], &E.coo2[E.size()], -10);
   std::iota(&E.val[0], &E.val[E.size()], 0);
 
   // Shuffle
+  /*
   srand(0);
   for (int n = 0; n < TEST_SIZE; n++)
   {
@@ -47,10 +48,13 @@ void test_partition_kernel(int kernel)
 
     swap(E, i, j);
   }
+  */
 
   int thresh = E.size() / 2;
   partition(E, E_leq, E_big, thresh, kernel);
   E.sync_deviceToHost();
+
+  assert(E_big.size() + E_leq.size() == E.size());
 
   // verify
   for (size_t i = 0; i < E_leq.size(); i++)
@@ -63,8 +67,6 @@ void test_partition_kernel(int kernel)
     assert(E_big.val[i] > thresh);
   }
 
-  assert(E_big.size() + E_leq.size() == E.size());
-
   return;
 }
 
@@ -74,7 +76,7 @@ int main(int ac, char **av)
   // po::store(po::parse_command_line(ac, av), options);
   g_options = misc::parse_options(ac, av);
 
-  std::vector<int> kernels = {PARTITION_KERNEL_CPU_NAIVE, PARTITION_KERNEL_GPU,
+  std::vector<int> kernels = {PARTITION_KERNEL_GPU, PARTITION_KERNEL_CPU_NAIVE,
                               PARTITION_KERNEL_STREAMS, PARTITION_KERNEL_THRUST};
 
   for (auto kernel : kernels)
