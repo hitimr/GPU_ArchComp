@@ -539,15 +539,17 @@ void radix_sort(EdgeList &E)
   }
   cudaMemcpy(E.val, E.d_val, sizeof(int) * size, cudaMemcpyDeviceToHost);
   cudaMemcpy(initial.data(), cuda_ind_tmp, size * sizeof(int), cudaMemcpyDeviceToHost);
-  E.set_owner(HOST);
 
-  std::vector<int> tmp_vec1(E.coo1, E.coo1 + E.size());
-  std::vector<int> tmp_vec2(E.coo2, E.coo2 + E.size());
-  for (int i = 0; i < size; i++)
-  {
-    E.coo1[i] = tmp_vec1[initial[i]];
-    E.coo2[i] = tmp_vec2[initial[i]];
-  }
+  size_t bytes = E.size() * sizeof(int);
+  int *tmp_coo1, *tmp_coo2;
+  cudaMalloc(&tmp_coo1, bytes);
+  cudaMalloc(&tmp_coo2, bytes);
+  cudaMemcpy(tmp_coo1, E.d_coo1, bytes, cudaMemcpyDeviceToDevice);
+  cudaMemcpy(tmp_coo2, E.d_coo2, bytes, cudaMemcpyDeviceToDevice);
+
+  assemble_with_indices<<<GRID_SIZE, BLOCK_SIZE>>>(E.d_coo1, E.d_coo2, tmp_coo1, tmp_coo2,
+                                                   cuda_ind_tmp, size);
+  cudaDeviceSynchronize();
 
   // cudaFree(cuda_in);
   cudaFree(cuda_out);

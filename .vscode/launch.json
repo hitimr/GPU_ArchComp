@@ -17,7 +17,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/Ex2/build/src/ex2",
-            "args": ["-s", "3", "-f", "2", "-p", "2"],
+            "args": ["-s", "3", "-f", "2"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

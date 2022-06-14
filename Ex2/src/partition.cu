@@ -465,7 +465,6 @@ __global__ void create_partitioned_array_filter(int *values, int *start, int *ta
     }
   }
 }
-
 void filter_gpu_naive(EdgeList &E, UnionFind &P)
 {
   E.sync_hostToDevice();
@@ -494,7 +493,6 @@ void filter_gpu_naive(EdgeList &E, UnionFind &P)
 
   // reserve some space here for leq and ge vectors
   E_new.resize_and_set_num_edges(sum[0]);
-  E_new.set_owner(DEVICE);
 
   create_partitioned_array_filter<<<GRIDSIZE, BLOCKSIZE>>>(E.d_val, E.d_coo1, E.d_coo2, d_truth,
                                                            d_scanned_truth, E_new.d_val,
@@ -504,6 +502,9 @@ void filter_gpu_naive(EdgeList &E, UnionFind &P)
   cudaFree(d_scanned_truth);
 
   E = std::move(E_new);
+  E.set_owner(DEVICE);
+  // E.sync_deviceToHost();
+  return;
 }
 
 // condition for partitioning with thrust
@@ -596,6 +597,7 @@ void filter_thrust(EdgeList &E, UnionFind &P)
   cudaMemcpy(d_parents, P.parent.data(), num_bytes_parents, cudaMemcpyHostToDevice);
 
   check_array_filter<<<GRIDSIZE, BLOCKSIZE>>>(d_parents, E.d_coo1, E.d_coo2, d_truth, size);
+  cudaDeviceSynchronize();
 
   int size_E_new = thrust::count_if(thrust::device, ptr_d_truth, ptr_d_truth + size, is_valid());
 
@@ -616,5 +618,4 @@ void filter_thrust(EdgeList &E, UnionFind &P)
   cudaFree(d_truth);
 
   E = std::move(E_new);
-  E.sync_deviceToHost();
 }

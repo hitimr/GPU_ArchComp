@@ -41,7 +41,7 @@ bool kruskal_threshold(EdgeList &E)
           ? MINIMUM_KRUSKAL_THRESHOLD
           : E.size() / g_options["recusion-depth"].as<int>();
 
-  if ((int)E.num_edges < thresh)
+  if ((int)E.size() < thresh)
   {
     return true;
   }
@@ -51,14 +51,14 @@ bool kruskal_threshold(EdgeList &E)
   }
 }
 
-int pivot(const EdgeList &E)
+int pivot(EdgeList &E)
 {
   // rand() is sufficient for pivot elements
   int pos = rand() % E.size();
   if (E.owner == HOST)
   {
     // Most recent data is on HOST
-    return E.val[pos];  
+    return E.val[pos];
   }
   else
   {
@@ -90,8 +90,6 @@ void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
 
     filter(E_big, P, g_options["filter-kernel"].as<int>());
 
-    // E_big.sync_deviceToHost();  // TODO: (Workaround) remove before release and fix bug
-
     if (E_big.size() != 0)
     {
       filter_kruskal(E_big, P, T);
@@ -102,7 +100,6 @@ void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
 void kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
 {
   g_benchmarker.start("Kruskal()");
-  // E.sync_deviceToHost();
 
   // this will sort all three arrays according to the values in the first one
   sort_edgelist(E, g_options["sort-kernel"].as<int>());

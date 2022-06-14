@@ -45,6 +45,9 @@ int main(int ac, char **av)
       kruskal(E_leq_test, P_test, T_test);
     }
 
+    E_big.sync_hostToDevice();
+    E_big_test.sync_hostToDevice();
+
     filter(E_big, P, FILTER_KERNEL_CPU_NAIVE);
     filter(E_big_test, P_test, kernel);
 

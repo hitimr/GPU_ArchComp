@@ -15,4 +15,4 @@ void filter_kruskal(EdgeList &edgelist, UnionFind &P, EdgeList &T);
 // subroutine required for filter_kruskal
 bool kruskal_threshold(EdgeList &E);
 
-int pivot(const EdgeList &E);
+int pivot(EdgeList &E);
