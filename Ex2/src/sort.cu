@@ -82,17 +82,22 @@ void gpu_thrust_sort_three(EdgeList &E)
   // TODO: maybe perform assemlby on GPU..
   thrust::copy(d_vec.begin(), d_vec.end(), E.d_val);
 
+  int *d_ind_ptr = thrust::raw_pointer_cast(d_ind_vec.data());
+  assemble_coo(E, d_ind_ptr);
+
+  /*
   size_t bytes = E.size() * sizeof(int);
   int *tmp_coo1, *tmp_coo2;
   cudaMalloc(&tmp_coo1, bytes);
   cudaMalloc(&tmp_coo2, bytes);
   cudaMemcpy(tmp_coo1, E.d_coo1, bytes, cudaMemcpyDeviceToDevice);
   cudaMemcpy(tmp_coo2, E.d_coo2, bytes, cudaMemcpyDeviceToDevice);
-  int *d_ind_ptr = thrust::raw_pointer_cast(d_ind_vec.data());
+
 
   assemble_with_indices<<<GRID_SIZE, BLOCK_SIZE>>>(E.d_coo1, E.d_coo2, tmp_coo1, tmp_coo2,
                                                    d_ind_ptr, size);
   cudaDeviceSynchronize();
+  */
 }
 
 __global__ void gpu_merge_sort_thread_per_block_with_ind(int *input, int *output, int size,
@@ -189,6 +194,10 @@ void improved_mergesort_three(EdgeList &E)
       done = true;
     }
   }
+
+  cudaMemcpy(E.d_val, output, size * sizeof(int), cudaMemcpyDeviceToDevice);
+  assemble_coo(E, output_ind);
+  return;
 
   // Assembly on Host
   cudaMemcpy(E.val, output, size * sizeof(int), cudaMemcpyDeviceToHost);
@@ -487,6 +496,24 @@ void scan(int *in, int *out, int size)
   cudaFree(partial_sums);
 }
 
+void assemble_coo(EdgeList &E, int *indices)
+{
+  size_t bytes = E.size() * sizeof(int);
+  size_t size = E.size();
+  int *tmp_coo1, *tmp_coo2;
+  cudaMalloc(&tmp_coo1, bytes);
+  cudaMalloc(&tmp_coo2, bytes);
+  cudaMemcpy(tmp_coo1, E.d_coo1, bytes, cudaMemcpyDeviceToDevice);
+  cudaMemcpy(tmp_coo2, E.d_coo2, bytes, cudaMemcpyDeviceToDevice);
+
+  assemble_with_indices<<<GRID_SIZE, BLOCK_SIZE>>>(E.d_coo1, E.d_coo2, tmp_coo1, tmp_coo2, indices,
+                                                   size);
+  cudaDeviceSynchronize();
+
+  cudaFree(tmp_coo1);
+  cudaFree(tmp_coo2);
+}
+
 void radix_sort(EdgeList &E)
 {
   E.sync_hostToDevice();
@@ -538,18 +565,9 @@ void radix_sort(EdgeList &E)
                                           cuda_prefix_sums, cuda_scan_block_sums, current_bits);
   }
   cudaMemcpy(E.val, E.d_val, sizeof(int) * size, cudaMemcpyDeviceToHost);
-  cudaMemcpy(initial.data(), cuda_ind_tmp, size * sizeof(int), cudaMemcpyDeviceToHost);
+  // cudaMemcpy(initial.data(), cuda_ind_tmp, size * sizeof(int), cudaMemcpyDeviceToHost);
 
-  size_t bytes = E.size() * sizeof(int);
-  int *tmp_coo1, *tmp_coo2;
-  cudaMalloc(&tmp_coo1, bytes);
-  cudaMalloc(&tmp_coo2, bytes);
-  cudaMemcpy(tmp_coo1, E.d_coo1, bytes, cudaMemcpyDeviceToDevice);
-  cudaMemcpy(tmp_coo2, E.d_coo2, bytes, cudaMemcpyDeviceToDevice);
-
-  assemble_with_indices<<<GRID_SIZE, BLOCK_SIZE>>>(E.d_coo1, E.d_coo2, tmp_coo1, tmp_coo2,
-                                                   cuda_ind_tmp, size);
-  cudaDeviceSynchronize();
+  assemble_coo(E, cuda_ind_tmp);
 
   // cudaFree(cuda_in);
   cudaFree(cuda_out);
