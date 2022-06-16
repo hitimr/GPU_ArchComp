@@ -61,7 +61,11 @@ def do_benchmark_runs(list_of_runs):
 
 
 # collect data for stacked bars
-def collect_for_stack(list_of_runs, stack_items=['Initialize', 'filter()', 'grow MST', 'sort()', 'partition()']):
+#def collect_for_stack(list_of_runs, stack_items=['Initialize', 'filter()', 'grow MST', 'sort()', 'partition()']):
+def collect_for_stack(list_of_runs, regular_kruskal=False):
+    stack_items=['Initialize', 'filter()', 'grow MST', 'sort()', 'partition()']
+    if regular_kruskal:    
+        stack_items=['Initialize', 'grow MST', 'sort()']
     labels = []
     results = {}
     for si in stack_items:
@@ -142,8 +146,8 @@ def stack_percent(stack, top_at_100=True):
     return stack_pct, totals
 
 
-def stacked_bars(list_of_runs):
-    labels, stack = collect_for_stack(list_of_runs)
+def stacked_bars(list_of_runs,regular_kruskal=False):
+    labels, stack = collect_for_stack(list_of_runs, regular_kruskal)
     str_labels = []
     for label in labels:
         str_labels.append(str(label))
