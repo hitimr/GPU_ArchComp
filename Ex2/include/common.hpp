@@ -48,8 +48,8 @@ extern Benchmarker g_benchmarker;
 #define DEFAULT_MAX_RECURSION_DEPTH 32                    // For Kruskal Threshold
 #define DEFAULT_REPETITIONS 1                             // Repetitions
 
-//#define MINIMUM_KRUSKAL_THRESHOLD 100000
-#define MINIMUM_KRUSKAL_THRESHOLD 100
+#define MINIMUM_KRUSKAL_THRESHOLD 100000
+//#define MINIMUM_KRUSKAL_THRESHOLD 100
 
 // Misc
 #define EXIT_SUCCESS 0
