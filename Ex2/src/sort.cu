@@ -46,6 +46,10 @@ void sort_edgelist(EdgeList &E, int kernel)
     radix_sort(E);
     break;
 
+  case SORT_KERNEL_CPU:
+    cpu_sort(E);
+    break;
+
   default:
     throw std::invalid_argument("Unknown sort kernel");
   }
@@ -513,6 +517,31 @@ void assemble_coo(EdgeList &E, int *indices)
   cudaFree(tmp_coo1);
   cudaFree(tmp_coo2);
 }
+
+void cpu_sort(EdgeList &E)
+{
+  E.sync_deviceToHost();
+  int size = E.size();
+  std::vector<int> indices(size);
+  std::iota(indices.begin(), indices.end(), 0);
+  std::sort(indices.begin(), indices.end(),
+    [&](int A, int B) -> bool {
+        return E.val[A] < E.val[B];
+    });
+
+  std::vector<int> tmp_vec1, tmp_vec2, tmp_vec3;
+  copy(&E.val[0], &E.val[size], back_inserter(tmp_vec1));
+  copy(&E.coo1[0], &E.coo1[size], back_inserter(tmp_vec2));
+  copy(&E.coo2[0], &E.coo2[size], back_inserter(tmp_vec3));
+
+  for(int i = 0; i < size; i++){
+    E.val[i] = tmp_vec1[indices[i]];
+    E.coo1[i] = tmp_vec2[indices[i]];
+    E.coo2[i] = tmp_vec3[indices[i]];
+  }
+}
+
+
 
 void radix_sort(EdgeList &E)
 {
