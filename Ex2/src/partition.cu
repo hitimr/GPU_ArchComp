@@ -500,6 +500,7 @@ void filter_gpu_naive(EdgeList &E, UnionFind &P)
   cudaDeviceSynchronize();
   cudaFree(d_truth);
   cudaFree(d_scanned_truth);
+  cudaFree(d_parents);
 
   E = std::move(E_new);
   E.set_owner(DEVICE);
@@ -616,6 +617,7 @@ void filter_thrust(EdgeList &E, UnionFind &P)
                   is_valid());
 
   cudaFree(d_truth);
+  cudaFree(d_parents);
 
   E = std::move(E_new);
 }
