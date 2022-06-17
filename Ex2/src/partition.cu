@@ -367,40 +367,21 @@ void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int 
   cudaMemcpy(sum_smaller, d_scanned_truth_small + size - 1, sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(sum_greater, d_scanned_truth_big + size - 1, sizeof(int), cudaMemcpyDeviceToHost);
 
-  int *d_E_leq_val, *d_E_leq_coo1, *d_E_leq_coo2, *d_E_ge_val, *d_E_ge_coo1, *d_E_ge_coo2;
-  cudaMalloc((void **)&d_E_leq_val, sizeof(int) * sum_smaller[0]);
-  cudaMalloc((void **)&d_E_leq_coo1, sizeof(int) * sum_smaller[0]);
-  cudaMalloc((void **)&d_E_leq_coo2, sizeof(int) * sum_smaller[0]);
-  cudaMalloc((void **)&d_E_ge_val, sizeof(int) * sum_greater[0]);
-  cudaMalloc((void **)&d_E_ge_coo1, sizeof(int) * sum_greater[0]);
-  cudaMalloc((void **)&d_E_ge_coo2, sizeof(int) * sum_greater[0]);
 
   // reserve some space here for leq and ge vectors
   E_leq.resize_and_set_num_edges(sum_smaller[0]);
   E_ge.resize_and_set_num_edges(sum_greater[0]);
 
   create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(E.d_val, E.d_coo1, E.d_coo2, d_truth_small,
-                                                    d_scanned_truth_small, d_E_leq_val,
-                                                    d_E_leq_coo1, d_E_leq_coo2, size);
+                                                    d_scanned_truth_small, E_leq.d_val,
+                                                    E_leq.d_coo1, E_leq.d_coo2, size);
   create_partitioned_array<<<GRIDSIZE, BLOCKSIZE>>>(E.d_val, E.d_coo1, E.d_coo2, d_truth_big,
-                                                    d_scanned_truth_big, d_E_ge_val, d_E_ge_coo1,
-                                                    d_E_ge_coo2, size);
+                                                    d_scanned_truth_big, E_ge.d_val, E_ge.d_coo1,
+                                                    E_ge.d_coo2, size);
+  E_leq.set_owner(DEVICE);
+  E_ge.set_owner(DEVICE);
+  cudaDeviceSynchronize();
 
-  cudaMemcpy(E_leq.val, d_E_leq_val, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(E_leq.coo1, d_E_leq_coo1, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(E_leq.coo2, d_E_leq_coo2, sizeof(int) * sum_smaller[0], cudaMemcpyDeviceToHost);
-
-  cudaMemcpy(E_ge.val, d_E_ge_val, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(E_ge.coo1, d_E_ge_coo1, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost);
-  cudaMemcpy(E_ge.coo2, d_E_ge_coo2, sizeof(int) * sum_greater[0], cudaMemcpyDeviceToHost);
-
-  // cudaFree(d_E_val);
-  cudaFree(d_E_leq_val);
-  cudaFree(d_E_leq_coo1);
-  cudaFree(d_E_leq_coo2);
-  cudaFree(d_E_ge_val);
-  cudaFree(d_E_ge_coo1);
-  cudaFree(d_E_ge_coo2);
   cudaFree(d_truth_small);
   cudaFree(d_truth_big);
   cudaFree(d_scanned_truth_small);
