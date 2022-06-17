@@ -15,12 +15,14 @@ def test_calculateMST(args=""):
 
 
 if __name__ == "__main__":
+    compression_levels = range(1,3)
     sort_kernels = range(4)
     filter_kernels = range(3)
     partition_kernels = range(4)
 
-    for sort_kernel in sort_kernels:
-        for filter_kernel in filter_kernels:
-            for partition_kernel in partition_kernels:
-                test_calculateMST(
-                    f"-s {sort_kernel} -m 1 -f {filter_kernel} -p {partition_kernel}")
+    for compression_level in compression_levels:
+        for sort_kernel in sort_kernels:
+            for filter_kernel in filter_kernels:
+                for partition_kernel in partition_kernels:
+                    test_calculateMST(
+                        f"-s {sort_kernel} -m 1 -f {filter_kernel} -p {partition_kernel} -c {compression_level}")

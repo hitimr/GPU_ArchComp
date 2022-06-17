@@ -10,18 +10,15 @@ public:
 
   UnionFind(size_t size, int compress_level = 1)
   {
-    switch (compress_level)
+    if (compress_level == 0)
     {
-    case 0:
       use_compression = false;
-      break;
-    case 1:
-      use_compression = true;
-      break;
-    default:
-      throw std::invalid_argument("Invalid compression level");
-      break;
     }
+    else
+    {
+      use_compression = true;
+    }
+
     parent.resize(size);
     for (size_t i = 0; i < parent.size(); ++i)
       parent[i] = i; // TODO: maybe make parallel

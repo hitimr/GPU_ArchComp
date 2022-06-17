@@ -88,6 +88,7 @@ void filter_kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
       filter_kruskal(E_leq, P, T);
     }
 
+    P.compress(g_options["compress-level"].as<int>());
     filter(E_big, P, g_options["filter-kernel"].as<int>());
 
     if (E_big.size() != 0)
