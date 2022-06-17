@@ -63,5 +63,7 @@ int main(int ac, char **av)
     throw std::runtime_error("Weight of MST does not match reference");
   }
 
+  cudaDeviceReset();
+
   return 0;
 }
