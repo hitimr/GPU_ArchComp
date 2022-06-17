@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+#include <stdexcept>
 #include <vector>
 
 class UnionFind
@@ -7,8 +8,20 @@ class UnionFind
 public:
   std::vector<int> parent;
 
-  UnionFind(size_t size)
+  UnionFind(size_t size, int compress_level = 1)
   {
+    switch (compress_level)
+    {
+    case 0:
+      use_compression = false;
+      break;
+    case 1:
+      use_compression = true;
+      break;
+    default:
+      throw std::invalid_argument("Invalid compression level");
+      break;
+    }
     parent.resize(size);
     for (size_t i = 0; i < parent.size(); ++i)
       parent[i] = i; // TODO: maybe make parallel
@@ -16,10 +29,17 @@ public:
 
   int find(int i)
   {
-    if (parent[i] == i)
-      return i;
+    if (use_compression == true)
+    {
+      return find_and_compress(i);
+    }
     else
-      return find(parent[i]);
+    {
+      if (parent[i] == i)
+        return i;
+      else
+        return find(parent[i]);
+    }
   }
 
   int find_and_compress(int i)
@@ -38,13 +58,15 @@ public:
 
   void my_union(int i, int j)
   {
-    if (find_and_compress(i) != find_and_compress(j))
-      link(find_and_compress(i), find_and_compress(j));
+    if (find(i) != find(j))
+      link(find(i), find(j));
   }
 
   int get_parent(int i) { return parent[i]; }
 
   void compress(int kernel);
+
+  bool use_compression = true;
 };
 
 void compress_cpu_naive(std::vector<int> &parent);

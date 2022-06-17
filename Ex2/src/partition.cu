@@ -417,7 +417,7 @@ void filter_cpu_naive(EdgeList &E, UnionFind &P)
   for (size_t i = 0; i < E.size(); i++)
   {
     Edge e = E[i];
-    if (P.find_and_compress(e.source) != P.find_and_compress(e.target))
+    if (P.find(e.source) != P.find(e.target))
     {
       E_filt.append_edge(e);
     }

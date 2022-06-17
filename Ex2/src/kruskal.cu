@@ -11,7 +11,7 @@ EdgeList calculate_mst(EdgeList &edgelist)
 {
   g_benchmarker.start("total");
   g_benchmarker.start("Initialize");
-  UnionFind P(edgelist.num_edges);
+  UnionFind P(edgelist.num_edges, g_options["compress-level"].as<int>());
   EdgeList T(edgelist.num_nodes - 1); // EdgeList is empty but required memory is already allocated
   g_benchmarker.stop("Initialize");
 
@@ -110,7 +110,7 @@ void kruskal(EdgeList &E, UnionFind &P, EdgeList &T)
   g_benchmarker.start("grow MST");
   for (size_t i = 0; i < E.size(); i++)
   {
-    if (P.find_and_compress(E.coo1[i]) != P.find_and_compress(E.coo2[i]))
+    if (P.find(E.coo1[i]) != P.find(E.coo2[i]))
     {
       T.append_edge(E[i]);
       P.my_union(E.coo1[i], E.coo2[i]);

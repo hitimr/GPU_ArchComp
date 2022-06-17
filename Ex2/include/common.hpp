@@ -45,14 +45,14 @@ extern Benchmarker g_benchmarker;
 #define SORT_DEFAULT_KERNEL SORT_KERNEL_MERGE_SORT        // Sort
 #define PARTITION_DEFAULT_KERNEL PARTITION_KERNEL_GPU     // Partition
 #define DEFAULT_FILTER_KERNEL FILTER_KERNEL_CPU_NAIVE     // Filter
-#define DEFAULT_COMPRESS_KERNEL COMPRESS_KERNEL_CPU_NAIVE // Path Comrpession
+#define DEFAULT_COMPRESS_LEVEL 1                          // Path Comrpession
 #define DEFAULT_MAX_RECURSION_DEPTH 32                    // For Kruskal Threshold
 #define DEFAULT_REPETITIONS 1                             // Repetitions
 
 #define MINIMUM_KRUSKAL_THRESHOLD 100000
 
-// Misc
 #define EXIT_SUCCESS 0
+// Misc
 #define BLOCK_SIZE 256
 #define GRID_SIZE 256
 #define BLOCKSIZE BLOCK_SIZE

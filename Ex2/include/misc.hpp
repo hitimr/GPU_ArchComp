@@ -108,8 +108,8 @@ OptionsT parse_options(int ac, char **av)
         po::value<int>()->default_value(DEFAULT_FILTER_KERNEL),
         "Kernel used for filter() [int]")
 
-        ("compress-kernel,c",
-        po::value<int>()->default_value(DEFAULT_COMPRESS_KERNEL),
+        ("compress-level,c",
+        po::value<int>()->default_value(DEFAULT_COMPRESS_LEVEL),
         "Kernel used for compress() [int]")
 
         ("recusion-depth,r",
