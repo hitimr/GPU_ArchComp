@@ -109,36 +109,6 @@ def create_graphs(graph_list, output_dir=common.INPUT_DATA_DIR, create_mst=True)
             export_graph(g_mst_gt, f"{base_filename}_mst_gt.csv")
             print("mst done after {:.2f} seconds".format(time.time() - start_time))
 
-'''
-if __name__ == "__main__":
-
-    d_fac = {"10pct": .053, "50pct": .293, "90pct": .684} # these factors will create the desired densities
-
-    ranges = {"10pct": [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600],
-              "50pct": [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800],
-              "90pct": [25, 50, 100, 200, 400, 800, 1600, 3200, 6400]    
-             }
-
-    #for key in d_fac:
-    for key in ['90pct']:
-        print("density: ", key)
-        graph_list = []
-        for r in ranges[key]:
-            graph_list.append({"n_nodes": r, "connectivity": int(d_fac[key]*r), "w_min": 1, "w_max": 1000, 'density': key})
-        print('list of graphs to be created:')
-        for graph in graph_list:
-            print(graph)
-        print('')
-
-        out_dir = common.WORKSPACE_DIR / "benchmark_data"
-        print('creating graphs: ')
-        create_graphs(graph_list, output_dir=out_dir, create_mst=True)
-
-
-    # save graph and mst to file
-    export_graph(g, f"{base_filename}.csv")
-    export_graph(g_mst_gt, f"{base_filename}_mst_gt.csv")
-'''
 
 
 if __name__ == "__main__":
@@ -147,20 +117,30 @@ if __name__ == "__main__":
 
     ranges = {"10pct": [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600],
               "50pct": [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800],
-              "90pct": [25, 50, 100, 200, 400, 800, 1600, 3200, 6400]    
+              "90pct": [25, 50, 100, 200, 400, 800, 1600, 3200, 6400],
+              "sparse": [15625, 31250, 65500, 125000, 250000, 500000, 1000000, 2000000]
              }
 
+    out_dir = common.WORKSPACE_DIR / "benchmark_data"
+    #supersparse = {"n_nodes": int(1e6), "connectivity": 10, "w_min": 1, "w_max": 1000, 'density': 'sparse'}
+    #sparselist = [supersparse]
+    #create_graphs(sparselist, output_dir=out_dir, create_mst=True)
+
     #for key in d_fac:
-    for key in ['50pct']:
+    for key in ['sparse']:
         print("density: ", key)
         graph_list = []
         for r in ranges[key]:
-            graph_list.append({"n_nodes": r, "connectivity": int(d_fac[key]*r), "w_min": 1, "w_max": 1000, 'density': key})
+            if key == 'sparse':
+                graph_list.append({"n_nodes": r, "connectivity": 10, "w_min": 1, "w_max": 1000, 'density': key})
+            else:
+                graph_list.append({"n_nodes": r, "connectivity": int(d_fac[key]*r), "w_min": 1, "w_max": 1000, 'density': key})
+
         print('list of graphs to be created:')
         for graph in graph_list:
             print(graph)
         print('')
 
-        out_dir = common.WORKSPACE_DIR / "benchmark_data"
         print('creating graphs: ')
         create_graphs(graph_list, output_dir=out_dir, create_mst=True)
+    
