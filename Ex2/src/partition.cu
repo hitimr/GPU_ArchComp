@@ -367,7 +367,6 @@ void partition_inclusive_scan(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int 
   cudaMemcpy(sum_smaller, d_scanned_truth_small + size - 1, sizeof(int), cudaMemcpyDeviceToHost);
   cudaMemcpy(sum_greater, d_scanned_truth_big + size - 1, sizeof(int), cudaMemcpyDeviceToHost);
 
-
   // reserve some space here for leq and ge vectors
   E_leq.resize_and_set_num_edges(sum_smaller[0]);
   E_ge.resize_and_set_num_edges(sum_greater[0]);
@@ -520,13 +519,11 @@ void partition_thrust(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshol
       thrust::count_if(thrust::device, ptr_E_d_val, ptr_E_d_val + size_E, is_less_equal(threshold));
   int size_bigger = size_E - size_smaller;
 
-  E_leq.sync_hostToDevice();
-  E_ge.sync_hostToDevice();
-  
   E_leq.resize_and_set_num_edges(size_smaller);
   E_ge.resize_and_set_num_edges(size_bigger);
 
-
+  E_leq.sync_hostToDevice();
+  E_ge.sync_hostToDevice();
 
   thrust::device_ptr<int> ptr_E_leq_d_val(&E_leq.d_val[0]);
   thrust::device_ptr<int> ptr_E_leq_d_coo1(&E_leq.d_coo1[0]);
@@ -539,6 +536,8 @@ void partition_thrust(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshol
   thrust::copy_if(thrust::device, ptr_E_d_coo2, ptr_E_d_coo2 + size_E, ptr_E_d_val,
                   ptr_E_leq_d_coo2, is_less_equal(threshold));
 
+  E_leq.sync_deviceToHost();
+
   thrust::device_ptr<int> ptr_E_ge_d_val(&E_ge.d_val[0]);
   thrust::device_ptr<int> ptr_E_ge_d_coo1(&E_ge.d_coo1[0]);
   thrust::device_ptr<int> ptr_E_ge_d_coo2(&E_ge.d_coo2[0]);
@@ -549,6 +548,8 @@ void partition_thrust(EdgeList &E, EdgeList &E_leq, EdgeList &E_ge, int threshol
                   is_greater(threshold));
   thrust::copy_if(thrust::device, ptr_E_d_coo2, ptr_E_d_coo2 + size_E, ptr_E_d_val, ptr_E_ge_d_coo2,
                   is_greater(threshold));
+
+  E_ge.sync_deviceToHost();
 }
 
 struct is_valid
