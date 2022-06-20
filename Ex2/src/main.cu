@@ -54,7 +54,6 @@ int main(int ac, char **av)
   }
 
   // Check Solution
-  // TODO: perform full check. i.e. verify all data not just the sum of weigths
   if (MST.weigth() != MST_reference.weigth())
   {
     std::cout << "Error! Weight of MST does not match reference" << std::endl;
