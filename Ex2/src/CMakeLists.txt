@@ -4,7 +4,6 @@ cuda_add_executable(ex2
     main.cu 
     kruskal.cu 
     sort.cu
-    graph.cu
     partition.cu
     edgelist.cu
     union_find.cu
