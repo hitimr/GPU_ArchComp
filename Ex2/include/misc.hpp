@@ -110,15 +110,15 @@ OptionsT parse_options(int ac, char **av)
 
         ("compress-level,c",
         po::value<int>()->default_value(DEFAULT_COMPRESS_LEVEL),
-        "Kernel used for compress() [int]")
+        "How often path compression is performed during the calculation [int]")
 
         ("recusion-depth,r",
         po::value<int>()->default_value(DEFAULT_MAX_RECURSION_DEPTH),
-        "Kernel used for compress() [int]")
+        "Approximate maximum number of iteratios of the filter kruskal algorithm [int]")
 
         ("repetitions,n",
         po::value<int>()->default_value(DEFAULT_REPETITIONS),
-        "Number of times the MST calculation is repeated [int]")
+        "Number of times the MST calculation is repeated (for benchmaarking only)[int]")
 
         ("inputfile,i", 
         po::value<std::vector<std::string>>(), 
